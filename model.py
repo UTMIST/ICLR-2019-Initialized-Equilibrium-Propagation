@@ -15,8 +15,9 @@ class Equilibriating:
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
         """
         self.input_dim = shape[0]
-        self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]  # TODO: non-input states?
+        self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]
         self.weights = self.init_weights(shape)
+        self.bias = [np.zeros(shape[i]) for i in range(1, len(shape))]
 
     @staticmethod
     def rho(v):
@@ -107,11 +108,19 @@ class Equilibriating:
         """
         Returns the energy of the net.
         """
-        magnitudes = sum([np.sum(state ** 2) for state in self.state]) / 2
-        activations = rho(self.state)
+        activations = [self.rho(i) for i in self.state]
+        sum_ = sum([np.sum(state ** 2) for state in self.state]) / 2  # magnitude of state
+        for i in range(len(activations) - 1):
+            state = activations[i]
+            next_ = activations[i + 1]
+            sum_ += 2 * np.dot(np.dot(self.weights[i], state), next_)
+        for j in range(len(activations)):
+            state = activations[j]
+            next_ = activations[i + 1]
+            sum_ += np.dot(state, next_)
+        sum_ += np.dot(np.dot(self.weights[0], x), activations[0]) # add input
 
-        # TODO: compute product of activations with weights/biases (refer to original code)
-        return magnitudes
+        return sum_
 
     def energy_grad_state(self, x):
         """

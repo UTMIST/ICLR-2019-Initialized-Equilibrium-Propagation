@@ -1,7 +1,7 @@
 import numpy as np
 
 from data import load_data
-from model import Equilibriating
+from equilibrium import Equilibrium
 
 SEED = 0
 
@@ -26,7 +26,7 @@ def train(hyperparams: dict):
 
     train, val, test = load_data(0.8)  # TODO: train/val split ratio?
 
-    model = Equilibriating(hyperparams["alpha"])
+    model = Equilibrium(hyperparams["alpha"])
 
     while True:
         # Sample minibatch

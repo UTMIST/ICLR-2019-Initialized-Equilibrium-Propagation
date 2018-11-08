@@ -2,11 +2,10 @@
 Defines a model object.
 """
 from typing import List
-from copy import deepcopy
 import numpy as np
 
 
-class Equilibriating:
+class Equilibrium:
     """
     A neural net to be trained using equilibrium propagation.
     """
@@ -26,7 +25,7 @@ class Equilibriating:
         The activation function to be used, here a hard sigmoid
 
         >>> v = [1, 2, -1, -2, 0.5, -0.5]
-        >>> Equilibriating.rho(v)
+        >>> Equilibrium.rho(v)
         array([1. , 1. , 0. , 0. , 0.5, 0. ])
         """
         t = np.clip(v, 0, 1)
@@ -38,7 +37,7 @@ class Equilibriating:
         The gradient of the activation function to be used, here a hard sigmoid
 
         >>> v = [0.9, 2, -1, -2, 0.5, -0.5]
-        >>> Equilibriating.rhoprime(v)
+        >>> Equilibrium.rhoprime(v)
         array([1, 0, 0, 0, 1, 0])
         """
         v = np.asarray(v)
@@ -49,7 +48,7 @@ class Equilibriating:
         """
         Initialize the weights according to Glorot/Bengio initialization.
 
-        >>> w = Equilibriating.init_weights([1, 2, 3])
+        >>> w = Equilibrium.init_weights([1, 2, 3])
         >>> len(w)
         2
         >>> w[0].shape
@@ -210,22 +209,6 @@ class Equilibriating:
         :rtype:
         """
         pass
-
-
-class Initializer:
-    """
-    A feedforward neural network trained to initalize the state of the equilibriating net for training via equilibrium
-    propagation.
-    """
-
-    def __init__(self):
-        pass
-
-    def evaluate(self):
-        """
-        Returns the output of the net.
-        """
-        return 0
 
 
 if __name__ == "__main__":

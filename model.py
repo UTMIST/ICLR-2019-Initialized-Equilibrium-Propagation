@@ -45,13 +45,45 @@ class Equilibriating:
         return ((v >= 0) & (v <= 1)).astype(int)
 
 
-    def init_weights(self, shape: np.ndarray):
+    @staticmethod
+    def init_weights(shape: np.ndarray):
         """
         Initialize the weights according to Glorot/Bengio initialization.
+
+        >>> w = Equilibriating.init_weights([1, 2, 3])
+        >>> len(w)
+        2
+        >>> w[0].shape
+        (1, 2)
+        >>> (w[0] >= -np.sqrt(2)).all() and (w[0] <= np.sqrt(2)).all()
+        True
+        >>> w[1].shape
+        (2, 3)
+        >>> (w[1] >= -np.sqrt(6 / 5)).all() and (w[1] <= np.sqrt(6 / 5)).all()
+        True
         """
-        weight_shape = tuple([(shape[i + 1], shape[i] + 1) for i in range(len(shape) - 1)])
-        # TODO: initialize using Glorot/Bengio?
-        return [np.zeros(weight_shape[i]) for i in range(len(weight_shape))]
+
+        def get_initialized_layer(n_in, n_out):
+            """
+            Perform Glorot/Bengio initialization of a single layer of the network
+            with input dimension n_in and output dimension n_out
+
+            >>> w = get_initialized_layer(3, 4)
+            >>> w.shape
+            (3, 4)
+            >>> (w >= -np.sqrt(6 / 7)).all() and (w <= np.sqrt(6 / 7)).all()
+            True
+            """
+            rng = np.random.RandomState()
+            return np.asarray(np.random.uniform(
+                -np.sqrt(6 / (n_in + n_out)),
+                np.sqrt(6 / (n_in + n_out)),
+                (n_in, n_out)
+            ))
+
+        weight_shape = zip(shape[:-1], shape[1:])
+        return [get_initialized_layer(n_in, n_out)
+            for n_in, n_out in weight_shape]
 
     def outputs(self):
         """
@@ -72,7 +104,7 @@ class Equilibriating:
         """
         for _ in range(num_steps):
             self.state -= step_size * self.clamped_energy_grad(x, y, beta)
-            
+
     def energy(self, x):
         """
         Returns the energy of the net.

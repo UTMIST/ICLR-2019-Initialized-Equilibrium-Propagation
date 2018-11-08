@@ -13,8 +13,6 @@ class Equilibriating:
     def __init__(self, shape: np.ndarray):
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
-        :param shape:
-        :type shape:
         """
         self.input_dim = shape[0]
         self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]  # TODO: non-input states?
@@ -44,7 +42,6 @@ class Equilibriating:
         v = np.asarray(v)
         return ((v >= 0) & (v <= 1)).astype(int)
 
-
     def init_weights(self, shape: np.ndarray):
         """
         Initialize the weights according to Glorot/Bengio initialization.
@@ -72,7 +69,7 @@ class Equilibriating:
         """
         for _ in range(num_steps):
             self.state -= step_size * self.clamped_energy_grad(x, y, beta)
-            
+
     def energy(self, x):
         """
         Returns the energy of the net.
@@ -119,6 +116,7 @@ class Equilibriating:
         """
         pass
 
+
 class Initializer:
     """
     A feedforward neural network trained to initalize the state of the equilibriating net for training via equilibrium
@@ -133,6 +131,7 @@ class Initializer:
         Returns the output of the net.
         """
         return 0
+
 
 if __name__ == "__main__":
     import doctest

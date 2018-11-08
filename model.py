@@ -2,7 +2,7 @@
 Defines a model object.
 """
 from typing import List
-
+from copy import deepcopy
 import numpy as np
 
 
@@ -15,10 +15,10 @@ class Equilibriating:
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
         """
-        self.input_dim = shape[0]
-        self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]
-        self.weights = self.init_weights(shape)
-        self.bias = [np.zeros(shape[i]) for i in range(1, len(shape))]
+        self.shape = shape
+        self.state = [np.zeros(shape[i]) for i in range(1, len(self.shape))]
+        self.weights = self.init_weights(self.shape)
+        self.bias = [np.zeros(shape[i]) for i in range(0, len(self.shape))]
 
     @staticmethod
     def rho(v):
@@ -96,6 +96,7 @@ class Equilibriating:
         """
         for _ in range(t_minus):
             self.state -= epsilon * self.energy_grad_state(x)
+        return self.state
 
     def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
         """
@@ -103,6 +104,7 @@ class Equilibriating:
         """
         for _ in range(t_plus):
             self.state -= epsilon * self.clamped_energy_grad(x, y, beta)
+        return self.state
 
     def energy(self, x):
         """
@@ -115,11 +117,12 @@ class Equilibriating:
             state = activations[i]
             next_ = activations[i + 1]
             sum_ += 2 * np.dot(np.dot(self.weights[i], state), next_)
+        # non-input biases
         for j in range(len(activations)):
             state = activations[j]
-            next_ = activations[j + 1]
-            sum_ += np.dot(state, next_)
-        sum_ += np.dot(np.dot(self.weights[0], x), activations[0])  # add input
+            sum_ += np.dot(state, self.bias[j + 1])
+        # input weights
+        sum_ += np.dot(np.dot(self.weights[0], x), activations[0])
 
         return sum_
 
@@ -130,12 +133,25 @@ class Equilibriating:
         # TODO: work out by hand what the gradients should be (refer to original code)
         return 0
 
-    def energy_grad_weights(self, x):
+    def update_weights(self, beta, eta, s_pos, s_neg, x):
         """
         Returns the gradient of the energy function evaluated at the current state.
         """
-        # TODO: work out by hand what the gradients should be (refer to original code)
-        return 0
+        act_neg = [self.rho(i) for i in s_neg]
+        act_pos = [self.rho(j) for j in s_pos]
+        # get gradient
+        weight_shape = zip(self.shape[:-1], self.shape[1:])
+        grad_weight = [np.zeros(shape) for shape in weight_shape]
+        grad_bias = [np.zeros(self.shape[i]) for i in range(0, len(self.shape))]
+        # loop over non-input weight layers
+        # off by 1 in act_pos/act_neg??
+        for i in range(1, len(act_neg) - 1):``
+            grad_weight[i] = (eta/beta) * (np.dot(act_pos[i-1],
+                                                 act_pos[i].T) - np.dot(act_neg[i-1], act_neg[i].T))
+            # bias gradient
+            grad_bias[i] = (eta/beta) * (act_pos[i] - act_neg[i])
+            # input??? null
+        grad_weight[0] = (eta/beta) * (np.dot(x, act_pos[0].T) - np.dot(x, act_neg[0].T))
 
     def clamped_energy_grad(self, x, y, beta):
         """

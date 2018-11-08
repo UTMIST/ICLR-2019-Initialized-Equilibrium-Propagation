@@ -1,6 +1,7 @@
 import numpy as np
 
 from data import load_data
+from model import Equilibriating
 
 SEED = 0
 
@@ -22,17 +23,18 @@ def train(hyperparams: dict):
     """
     Train the model with <hyperparams>.
     """
+
     train, val, test = load_data(0.8)  # TODO: train/val split ratio?
+
+    model = Equilibriating(hyperparams["alpha"])
+
     while True:
         # Sample minibatch
+        # sample beta
 
-        for t in hyperparams["t-"]:
-            pass  # Neg phase
+        model.negative_phase(x_sample, hyperparams["t-"], hyperparams["epsilon"])
 
-        for t in hyperparams["t+"]:
-            pass  # Pos phase
-
-        #theta =
+        model.positive_phase(x_sample, y_sample, hyperparams["t+"], hyperparams["epsilon"], hyperparams["beta"])
 
         pass
 

@@ -22,6 +22,31 @@ class Equilibriating:
         self.activation = lambda x: max(0, min(1, x))
         self.activation_grad = lambda x: 1 if 0 <= x <= 1 else 0
 
+    @staticmethod
+    def rho(v):
+        """
+        The activation function to be used, here a hard sigmoid
+
+        >>> v = [1, 2, -1, -2, 0.5, -0.5]
+        >>> Equilibriating.rho(v)
+        array([1. , 1. , 0. , 0. , 0.5, 0. ])
+        """
+        t = np.clip(v, 0, 1)
+        return t
+
+    @staticmethod
+    def rhoprime(v):
+        """
+        The gradient of the activation function to be used, here a hard sigmoid
+
+        >>> v = [0.9, 2, -1, -2, 0.5, -0.5]
+        >>> Equilibriating.rhoprime(v)
+        array([1, 0, 0, 0, 1, 0])
+        """
+        v = np.asarray(v)
+        return ((v >= 0) & (v <= 1)).astype(int)
+
+
     def init_weights(self, shape: np.ndarray):
         """
         Initialize the weights according to Glorot/Bengio initialization.
@@ -112,3 +137,7 @@ class Initializer:
         Returns the output of the net.
         """
         return 0
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -1,6 +1,7 @@
 """
 Defines a model object.
 """
+from typing import List
 
 import numpy as np
 
@@ -10,7 +11,7 @@ class Equilibriating:
     A neural net to be trained using equilibrium propagation.
     """
 
-    def __init__(self, shape: np.ndarray):
+    def __init__(self, shape: List[int]):
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
         """
@@ -43,9 +44,8 @@ class Equilibriating:
         v = np.asarray(v)
         return ((v >= 0) & (v <= 1)).astype(int)
 
-
     @staticmethod
-    def init_weights(shape: np.ndarray):
+    def init_weights(shape: List[int]):
         """
         Initialize the weights according to Glorot/Bengio initialization.
 
@@ -82,7 +82,7 @@ class Equilibriating:
 
         weight_shape = zip(shape[:-1], shape[1:])
         return [get_initialized_layer(n_in, n_out)
-            for n_in, n_out in weight_shape]
+                for n_in, n_out in weight_shape]
 
     def outputs(self):
         """
@@ -90,24 +90,25 @@ class Equilibriating:
         """
         return self.state[-1]
 
-    def negative_phase(self, x, num_steps: int, step_size: float):
+    def negative_phase(self, x, t_minus: int, epsilon: float):
         """
         Negative phase training.
         """
-        for _ in range(num_steps):
-            self.state -= step_size * self.energy_grad_state(x)
+        for _ in range(t_minus):
+            self.state -= epsilon * self.energy_grad_state(x)
 
-    def positive_phase(self, x, y, num_steps: int, step_size: float, beta: float):
+    def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
         """
         Positive phase training.
         """
-        for _ in range(num_steps):
-            self.state -= step_size * self.clamped_energy_grad(x, y, beta)
+        for _ in range(t_plus):
+            self.state -= epsilon * self.clamped_energy_grad(x, y, beta)
 
     def energy(self, x):
         """
         Returns the energy of the net.
         """
+        # TODO: add unit test
         activations = [self.rho(i) for i in self.state]
         sum_ = sum([np.sum(state ** 2) for state in self.state]) / 2  # magnitude of state
         for i in range(len(activations) - 1):
@@ -116,9 +117,9 @@ class Equilibriating:
             sum_ += 2 * np.dot(np.dot(self.weights[i], state), next_)
         for j in range(len(activations)):
             state = activations[j]
-            next_ = activations[i + 1]
+            next_ = activations[j + 1]
             sum_ += np.dot(state, next_)
-        sum_ += np.dot(np.dot(self.weights[0], x), activations[0]) # add input
+        sum_ += np.dot(np.dot(self.weights[0], x), activations[0])  # add input
 
         return sum_
 

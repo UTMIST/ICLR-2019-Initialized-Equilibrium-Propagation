@@ -131,7 +131,40 @@ class Equilibriating:
         Returns the gradient of the energy function evaluated at the current state.
         """
         # TODO: work out by hand what the gradients should be (refer to original code)
-        return 0
+        # self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]
+        activations_prime = [self.rhoprime(i) for i in self.state]
+        activations = [self.rho(i) for i in self.state]
+
+        state_grad = self.state.copy() # Just getting the shape right
+
+        for layer_index in range(len(state_grad)):
+            activated_prime_state = activations_prime[layer_index]
+            weights = self.weights[layer_index]
+            bias = self.bias[layer_index]
+
+            if layer_index == 0:  # 2nd layer. Consider only 3rd layer.
+                next_activated_state = activations[layer_index + 1]
+                state_grad[layer_index] = (-self.state[layer_index] +
+                                           np.multiply(activated_prime_state,
+                                                       (bias +
+                                                        np.matmul(weights, next_activated_state) +
+                                                        np.matmul(weights, x))))
+
+            elif layer_index == len(state_grad) - 1:  # Last layer. Consider only before-last layer.
+                prev_activated_state = activations[layer_index - 1]
+                state_grad[layer_index] = (-self.state[layer_index] +
+                                           np.multiply(activated_prime_state,
+                                                       (bias +
+                                                        np.matmul(weights, prev_activated_state))))  # Don't use inputs
+            else:
+                next_activated_state = activations[layer_index + 1]
+                prev_activated_state = activations[layer_index - 1]
+                state_grad[layer_index] = (-self.state[layer_index] +
+                                           np.multiply(activated_prime_state,
+                                                       (bias +
+                                                        np.matmul(weights, next_activated_state) +
+                                                        np.matmul(weights, prev_activated_state))))
+        return state_grad
 
     def update_weights(self, beta, eta, s_pos, s_neg, x):
         """

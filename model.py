@@ -152,18 +152,21 @@ class Equilibriating:
 
             elif layer_index == len(state_grad) - 1:  # Last layer. Consider only before-last layer.
                 prev_activated_state = activations[layer_index - 1]
+                prev_weights = self.weights[layer_index-1]
                 state_grad[layer_index] = (-self.state[layer_index] +
                                            np.multiply(activated_prime_state,
                                                        (bias +
-                                                        np.matmul(weights, prev_activated_state))))  # Don't use inputs
+                                                        np.matmul(prev_weights, prev_activated_state))))  # Don't use inputs
             else:
                 next_activated_state = activations[layer_index + 1]
                 prev_activated_state = activations[layer_index - 1]
+                prev_weights = self.weights[layer_index-1]
+
                 state_grad[layer_index] = (-self.state[layer_index] +
                                            np.multiply(activated_prime_state,
                                                        (bias +
                                                         np.matmul(weights, next_activated_state) +
-                                                        np.matmul(weights, prev_activated_state))))
+                                                        np.matmul(prev_weights, prev_activated_state))))
         return state_grad
 
     def update_weights(self, beta, eta, s_pos, s_neg, x):
@@ -178,7 +181,7 @@ class Equilibriating:
         grad_bias = [np.zeros(self.shape[i]) for i in range(0, len(self.shape))]
         # loop over non-input weight layers
         # off by 1 in act_pos/act_neg??
-        for i in range(1, len(act_neg) - 1):``
+        for i in range(1, len(act_neg) - 1):
             grad_weight[i] = (eta/beta) * (np.dot(act_pos[i-1],
                                                  act_pos[i].T) - np.dot(act_neg[i-1], act_neg[i].T))
             # bias gradient

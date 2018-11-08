@@ -19,8 +19,6 @@ class Equilibriating:
         self.input_dim = shape[0]
         self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]  # TODO: non-input states?
         self.weights = self.init_weights(shape)
-        self.activation = lambda x: max(0, min(1, x))
-        self.activation_grad = lambda x: 1 if 0 <= x <= 1 else 0
 
     @staticmethod
     def rho(v):
@@ -74,14 +72,13 @@ class Equilibriating:
         """
         for _ in range(num_steps):
             self.state -= step_size * self.clamped_energy_grad(x, y, beta)
-
+            
     def energy(self, x):
         """
         Returns the energy of the net.
         """
         magnitudes = sum([np.sum(state ** 2) for state in self.state]) / 2
-        # TODO: configure to apply element-wise
-        activations = [x] + [self.activation(self.state[i]) for i in range(len(self.state))]
+        activations = rho(self.state)
 
         # TODO: compute product of activations with weights/biases (refer to original code)
         return magnitudes
@@ -129,8 +126,7 @@ class Initializer:
     """
 
     def __init__(self):
-        self.activation = lambda x: max(0, min(1, x)) + 0.01 * x
-        self.activation = lambda x: 1 if 0 <= x <= 1 else 0.01
+        pass
 
     def evaluate(self):
         """

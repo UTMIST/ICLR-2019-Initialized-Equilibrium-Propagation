@@ -147,7 +147,7 @@ class Equilibrium:
                 state_grad[layer_index] = (-self.state[layer_index] +
                                            np.multiply(activated_prime_state,
                                                        (bias +
-                                                        np.matmul(weights, next_activated_state) +
+                                                        np.matmul(np.transpose(weights), next_activated_state) +
                                                         np.matmul(weights, x))))
 
             elif layer_index == len(state_grad) - 1:  # Last layer. Consider only before-last layer.
@@ -165,7 +165,7 @@ class Equilibrium:
                 state_grad[layer_index] = (-self.state[layer_index] +
                                            np.multiply(activated_prime_state,
                                                        (bias +
-                                                        np.matmul(weights, next_activated_state) +
+                                                        np.matmul(np.transpose(weights), next_activated_state) +
                                                         np.matmul(prev_weights, prev_activated_state))))
         return state_grad
 

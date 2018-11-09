@@ -72,6 +72,7 @@ class Equilibrium:
             >>> (w >= -np.sqrt(6 / 7)).all() and (w <= np.sqrt(6 / 7)).all()
             True
             """
+            # TODO: use rng?
             rng = np.random.RandomState()
             return np.asarray(np.random.uniform(
                 -np.sqrt(6 / (n_in + n_out)),

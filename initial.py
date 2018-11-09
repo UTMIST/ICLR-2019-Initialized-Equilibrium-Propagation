@@ -1,5 +1,5 @@
 """
-The initializer net.
+The initializer neural net.
 """
 from typing import List
 import numpy as np

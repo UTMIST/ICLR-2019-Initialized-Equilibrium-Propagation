@@ -217,13 +217,18 @@ class Equilibrium:
     def update_weights(self, beta, eta, s_pos, s_neg, x):
         """
         Returns the gradient of the energy function evaluated at the current state.
+        beta: clamping factor
+        eta: learning rate
+        s_pos: state from positive phase training
+        s_neg: state from negative phase training
+        x: input
         """
         act_neg = [self.rho(i) for i in s_neg]
         act_pos = [self.rho(j) for j in s_pos]
         # get gradient
         weight_shape = zip(self.shape[:-1], self.shape[1:])
         grad_weight = [np.zeros(shape) for shape in weight_shape]
-        grad_bias = [np.zeros(i) for i in self.shape]
+        grad_bias = [np.zeros(shape) for shape in self.shape]
         # loop over non-input weight layers
         # off by 1 in act_pos/act_neg??
         for i in range(1, len(act_neg) - 1):

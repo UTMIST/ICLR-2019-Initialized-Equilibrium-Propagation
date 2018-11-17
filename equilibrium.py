@@ -1,7 +1,7 @@
 """
 Defines a model object.
 """
-from typing import List
+from typing import List, Tuple
 import numpy as np
 
 
@@ -10,14 +10,37 @@ class Equilibrium:
     A neural net to be trained using equilibrium propagation.
     """
 
-    def __init__(self, shape: List[int]):
+    def __init__(self, shape: Tuple[int]):
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
         """
         self.shape = shape
-        self.state = [np.zeros(shape[i]) for i in range(1, len(self.shape))]
+        self.state = [np.zeros(i) for i in self.shape[1:]]
         self.weights = self.init_weights(self.shape)
-        self.bias = [np.zeros(shape[i]) for i in range(0, len(self.shape))]
+        self.bias = [np.zeros(i) for i in self.shape]
+
+    @staticmethod
+    def get_test_network():
+        """
+        Get a simple neural network to test with having shape [3, 4, 4, 3]
+
+        >>> testnet = Equilibrium.get_test_network()
+        >>> testnet.shape
+        (3, 4, 4, 3)
+        >>> testnet.state
+        [array([0., 0., 0., 0.]), array([0., 0., 0., 0.]), array([0., 0., 0.])]
+        >>> len(testnet.weights)
+        3
+        >>> testnet.weights[0].shape
+        (3, 4)
+        >>> testnet.weights[1].shape
+        (4, 4)
+        >>> testnet.weights[2].shape
+        (4, 3)
+        >>> [len(b) for b in testnet.bias] == [3, 4, 4, 3]
+        True
+        """
+        return Equilibrium((3, 4, 4, 3))
 
     @staticmethod
     def rho(v):
@@ -72,9 +95,8 @@ class Equilibrium:
             >>> (w >= -np.sqrt(6 / 7)).all() and (w <= np.sqrt(6 / 7)).all()
             True
             """
-            # TODO: use rng?
             rng = np.random.RandomState()
-            return np.asarray(np.random.uniform(
+            return np.asarray(rng.uniform(
                 -np.sqrt(6 / (n_in + n_out)),
                 np.sqrt(6 / (n_in + n_out)),
                 (n_in, n_out)

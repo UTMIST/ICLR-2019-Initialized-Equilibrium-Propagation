@@ -201,25 +201,25 @@ class Equilibrium:
 
         return total_energy
 
-    def calc_grad(self, s_j, activated_prime_state, bias, prev_activated_state, prev_weights, next_weights, next_activated_state):
+    def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights, next_weights, next_activated_state):
         """Returns the gradient for the first state layer
 
         >>> testnet = Equilibrium.get_test_network()
-        >>> s_j = np.array([9, 9, 9, 9])
+        >>> curr_state = np.array([9, 9, 9, 9])
         >>> act_pr_st = np.array([4, 5, 6, 7])
         >>> bias = np.array([1, 1, 1, 1])
         >>> prev_activated_state = np.array([1,2,3])
         >>> prev_w = np.zeros((3,4))
         >>> next_w = np.eye(4)
         >>> next_act_st = np.array([7,8,9,10])
-        >>> testnet.calc_grad(s_j, act_pr_st, bias, prev_activated_state, prev_w, next_w, next_act_st)
+        >>> testnet.calc_grad(curr_state, act_pr_st, bias, prev_activated_state, prev_w, next_w, next_act_st)
         array([23., 36., 51., 68.])
         """
         first_sum = np.matmul(next_weights, next_activated_state)
         second_sum = np.matmul(prev_weights.T, prev_activated_state)
         big_sum = bias + first_sum + second_sum
 
-        return -s_j + np.multiply(activated_prime_state, big_sum)
+        return -curr_state + np.multiply(activated_prime_state, big_sum)
 
     def energy_grad_state(self, x):
         """
@@ -250,11 +250,11 @@ class Equilibrium:
         activations_prime = [self.rhoprime(i) for i in self.state]
         activations = [self.rho(i) for i in self.state]
         state_grad = [np.zeros(i) for i in self.shape[1:]]
-        last_index = len(state_grad) - 1
+        last_index = len(self.state) - 1
         size_last_layer = self.shape[-1]
 
-        for layer_index in range(len(state_grad)):
-            s_j = self.state[layer_index]
+        for layer_index in range(len(self.state)):
+            curr_state = self.state[layer_index]
             activated_prime_state = activations_prime[layer_index]
             prev_weights = self.weights[layer_index]
             bias = self.bias[layer_index + 1]
@@ -269,7 +269,7 @@ class Equilibrium:
 
             # print(activated_prime_state, bias, prev_activated_state, next_activated_state, next_weights)
 
-            state_grad[layer_index] = self.calc_grad(s_j, activated_prime_state, bias, prev_activated_state,
+            state_grad[layer_index] = self.calc_grad(curr_state, activated_prime_state, bias, prev_activated_state,
                                                      prev_weights, next_weights, next_activated_state)
 
         return state_grad

@@ -21,11 +21,11 @@ class Equilibrium:
         self.bias = [np.zeros(i) for i in self.shape]
 
     @staticmethod
-    def get_test_network():
+    def test_shapes():
         """
-        Get a simple neural network to test with having shape [3, 4, 4, 3]
+        Get a simple neural network with layer sizes (3, 4, 4, 3) to test shapes of weights, biases, state.
 
-        >>> testnet = Equilibrium.get_test_network()
+        >>> testnet = Equilibrium.test_shapes()
         >>> testnet.shape
         (3, 4, 4, 3)
         >>> testnet.state
@@ -42,6 +42,28 @@ class Equilibrium:
         True
         """
         return Equilibrium((3, 4, 4, 3))
+
+    @staticmethod
+    def test_energy():
+        """
+        Get a simple neural network with layer sizes (3, 5, 3) to test energy calculations.
+
+        >>> testnet = Equilibrium.test_energy()
+        >>> x = np.zeros(3)
+        >>> testnet.energy(x)
+        0.0
+        >>> testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
+        >>> testnet.weights[1] = np.array([[i for i in range(15)]]).reshape(5, 3)
+        >>> testnet.bias[0] = np.array([i for i in range(3)])
+        >>> testnet.bias[1] = np.array([i for i in range(5)])
+        >>> testnet.bias[2] = np.array([i for i in range(3)])
+        >>> testnet.state[0] = np.array([i - 2 for i in range(5)])
+        >>> testnet.state[1] = np.array([i - 2 for i in range(3)])
+        >>> x = np.array([i for i in range(3)])
+        >>> testnet.energy(x)
+        -70.5
+        """
+        return Equilibrium((3, 5, 3))
 
     @staticmethod
     def rho(v):
@@ -133,21 +155,21 @@ class Equilibrium:
         """
         Returns the energy of the net.
         """
-        # TODO: add unit test
-        activations = [self.rho(i) for i in self.state]
-        sum_ = sum([np.sum(state ** 2) for state in self.state]) / 2  # magnitude of state
-        for i in range(len(activations) - 1):
-            state = activations[i]
-            next_ = activations[i + 1]
-            sum_ += 2 * np.dot(np.dot(self.weights[i], state), next_)
-        # non-input biases
-        for j in range(len(activations)):
-            state = activations[j]
-            sum_ += np.dot(state, self.bias[j + 1])
-        # input weights
-        sum_ += np.dot(np.dot(self.weights[0], x), activations[0])
+        activated_states = [self.rho(i) for i in self.state]
+        state_norm = sum([np.sum(state ** 2) for state in self.state]) / 2
+        total_energy = state_norm
 
-        return sum_
+        for state, next_state, weights in zip(activated_states[:-1], activated_states[1:], self.weights[1:]):
+            total_energy -= 2 * np.dot(np.dot(weights.T, state), next_state)
+
+        # non-input biases
+        for state, bias in zip(activated_states, self.bias[1:]):
+            total_energy -= np.dot(state, bias)
+
+        # input weights
+        total_energy -= np.dot(np.dot(self.weights[0].T, x), activated_states[0])
+
+        return total_energy
 
     def energy_grad_state(self, x):
         """

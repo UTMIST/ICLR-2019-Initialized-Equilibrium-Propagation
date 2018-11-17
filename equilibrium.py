@@ -94,7 +94,7 @@ class Equilibrium:
         testnet.update_weights(beta, eta, s_pos, s_neg, x)
 
         # return testnet
-        
+
     @staticmethod
     def rho(v):
         """
@@ -170,7 +170,9 @@ class Equilibrium:
         Negative phase training.
         """
         for _ in range(t_minus):
-            self.state -= epsilon * self.energy_grad_state(x)
+            grad = self.energy_grad_state(x)
+            for i in range(len(self.state)):
+                self.state[i] -= epsilon * grad[i]
         return self.state
 
     def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
@@ -178,7 +180,9 @@ class Equilibrium:
         Positive phase training.
         """
         for _ in range(t_plus):
-            self.state -= epsilon * self.clamped_energy_grad(x, y, beta)
+            grad = self.clamped_energy_grad(x, y, beta)
+            for i in range(len(self.state)):
+                self.state[i] -= epsilon * grad[i]
         return self.state
 
     def energy(self, x):
@@ -290,10 +294,10 @@ class Equilibrium:
             self.weights[i] -= (eta/beta) * (np.outer(act_pos[i-1], act_pos[i]) - np.outer(act_neg[i-1], act_neg[i]))
             # bias gradient
             self.bias[i] -= (eta/beta) * (act_pos[i - 1] - act_neg[i - 1])
-            
+
         self.weights[0] -= (eta/beta) * (np.outer(x, act_pos[0]) - np.outer(x, act_neg[0]))
         # update the input bias??
-        # self.bias[0] -= 
+        # self.bias[0] -=
 
     def clamped_energy_grad(self, x, y, beta):
         """

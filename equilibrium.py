@@ -5,7 +5,6 @@ from typing import Tuple
 
 import numpy as np
 
-
 class Equilibrium:
     """
     A neural net to be trained using equilibrium propagation.
@@ -202,47 +201,77 @@ class Equilibrium:
 
         return total_energy
 
+    def calc_grad(self, s_j, activated_prime_state, bias, prev_activated_state, prev_weights, next_weights, next_activated_state):
+        """Returns the gradient for the first state layer
+
+        >>> testnet = Equilibrium.get_test_network()
+        >>> s_j = np.array([9, 9, 9, 9])
+        >>> act_pr_st = np.array([4, 5, 6, 7])
+        >>> bias = np.array([1, 1, 1, 1])
+        >>> prev_activated_state = np.array([1,2,3])
+        >>> prev_w = np.zeros((3,4))
+        >>> next_w = np.eye(4)
+        >>> next_act_st = np.array([7,8,9,10])
+        >>> testnet.calc_grad(s_j, act_pr_st, bias, prev_activated_state, prev_w, next_w, next_act_st)
+        array([23., 36., 51., 68.])
+        """
+        first_sum = np.matmul(next_weights, next_activated_state)
+        second_sum = np.matmul(prev_weights.T, prev_activated_state)
+        big_sum = bias + first_sum + second_sum
+
+        return -s_j + np.multiply(activated_prime_state, big_sum)
+
     def energy_grad_state(self, x):
         """
         Returns the gradient of the energy function evaluated at the current state.
+
+        >>> testnet = Equilibrium.get_test_network()
+        >>> testnet.shape
+        (3, 4, 4, 3)
+        >>> testnet.state
+        [array([0., 0., 0., 0.]), array([0., 0., 0., 0.]), array([0., 0., 0.])]
+        >>> len(testnet.weights)
+        3
+        >>> testnet.weights[0].shape
+        (3, 4)
+        >>> testnet.weights[1].shape
+        (4, 4)
+        >>> testnet.weights[2].shape
+        (4, 3)
+        >>> x = np.array([1,1,2])
         """
+        # >>> testnet.energy_grad_state(x)
+        # [array([ 0.13709111, -1.72075492,  1.57004124, -0.22437192]), array([0., 0., 0., 0.]), array([0., 0., 0.])]
+        # Result depends on random numbers.
+        # But the sizes are right and the last 2 gradient vectors are all 0's, which is correct
+        # (next_activated_state are 0).
+
         # TODO: work out by hand what the gradients should be (refer to original code)
-        # self.state = [np.zeros(shape[i]) for i in range(1, len(shape))]
         activations_prime = [self.rhoprime(i) for i in self.state]
         activations = [self.rho(i) for i in self.state]
-
         state_grad = [np.zeros(i) for i in self.shape[1:]]
+        last_index = len(state_grad) - 1
+        size_last_layer = self.shape[-1]
 
         for layer_index in range(len(state_grad)):
+            s_j = self.state[layer_index]
             activated_prime_state = activations_prime[layer_index]
-            weights = self.weights[layer_index]
-            bias = self.bias[layer_index]
+            prev_weights = self.weights[layer_index]
+            bias = self.bias[layer_index + 1]
 
-            if layer_index == 0:  # 2nd layer. Consider only 3rd layer.
-                next_activated_state = activations[layer_index + 1]
-                state_grad[layer_index] = (-self.state[layer_index] +
-                                           np.multiply(activated_prime_state,
-                                                       (bias +
-                                                        np.matmul(np.transpose(weights), next_activated_state) +
-                                                        np.matmul(weights, x))))
+            prev_activated_state = x if layer_index == 0 else activations[layer_index - 1]
 
-            elif layer_index == len(state_grad) - 1:  # Last layer. Consider only before-last layer.
-                prev_activated_state = activations[layer_index - 1]
-                prev_weights = self.weights[layer_index-1]
-                state_grad[layer_index] = (-self.state[layer_index] +
-                                           np.multiply(activated_prime_state,
-                                                       (bias +
-                                                        np.matmul(prev_weights, prev_activated_state))))  # Don't use inputs
-            else:
-                next_activated_state = activations[layer_index + 1]
-                prev_activated_state = activations[layer_index - 1]
-                prev_weights = self.weights[layer_index-1]
+            next_activated_state = np.zeros(size_last_layer) if layer_index == last_index \
+                else activations[layer_index + 1]
 
-                state_grad[layer_index] = (-self.state[layer_index] +
-                                           np.multiply(activated_prime_state,
-                                                       (bias +
-                                                        np.matmul(np.transpose(weights), next_activated_state) +
-                                                        np.matmul(prev_weights, prev_activated_state))))
+            next_weights = np.zeros((size_last_layer, size_last_layer)) if layer_index == last_index \
+                else self.weights[layer_index + 1]
+
+            # print(activated_prime_state, bias, prev_activated_state, next_activated_state, next_weights)
+
+            state_grad[layer_index] = self.calc_grad(s_j, activated_prime_state, bias, prev_activated_state,
+                                                     prev_weights, next_weights, next_activated_state)
+
         return state_grad
 
     def update_weights(self, beta, eta, s_pos, s_neg, x):

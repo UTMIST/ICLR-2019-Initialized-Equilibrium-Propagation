@@ -51,20 +51,51 @@ class Equilibrium:
         >>> testnet = Equilibrium.test_energy()
         >>> x = np.zeros(3)
         >>> testnet.energy(x)
-        0.0
-        >>> testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
-        >>> testnet.weights[1] = np.array([[i for i in range(15)]]).reshape(5, 3)
-        >>> testnet.bias[0] = np.array([i for i in range(3)])
-        >>> testnet.bias[1] = np.array([i for i in range(5)])
-        >>> testnet.bias[2] = np.array([i for i in range(3)])
-        >>> testnet.state[0] = np.array([i - 2 for i in range(5)])
-        >>> testnet.state[1] = np.array([i - 2 for i in range(3)])
+        0.5
         >>> x = np.array([i for i in range(3)])
         >>> testnet.energy(x)
         -70.5
         """
-        return Equilibrium((3, 5, 3))
+        testnet = Equilibrium((3, 5, 3))
+        testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
+        testnet.weights[1] = np.array([[i for i in range(15)]]).reshape(5, 3)
+        testnet.bias[0] = np.array([i for i in range(3)])
+        testnet.bias[1] = np.array([i for i in range(5)])
+        testnet.bias[2] = np.array([i for i in range(3)])
+        testnet.state[0] = np.array([i - 2 for i in range(5)])
+        testnet.state[1] = np.array([i - 2 for i in range(3)])
 
+        return testnet
+
+    @staticmethod
+    def test_update_weights():
+        """
+        # Test update_weights method
+
+        # >>> testnet = Equilibrium.test_update_weights()
+        # >>> x = np.array([i for i in range(3)])
+        # >>> s_pos = [np.zeros(i) for i in testnet.shape[1:]]
+        # >>> s_neg = [np.zeros(i) for i in testnet.shape[1:]]
+        # >>> beta, eta = 1, 1
+        # >>> testnet.update_weights(beta, eta, s_pos, s_neg, x)
+        """
+        testnet = Equilibrium((3, 4, 5, 3))
+        testnet.weights[0] = np.array([[i for i in range(12)]], dtype = np.float64).reshape(3, 4)
+        testnet.weights[1] = np.array([[i for i in range(20)]], dtype = np.float64).reshape(4, 5)
+        testnet.weights[2] = np.array([[i for i in range(15)]], dtype = np.float64).reshape(5, 3)
+        testnet.bias[0] = np.array([i for i in range(3)], dtype=np.float64)
+        testnet.bias[1] = np.array([i for i in range(4)], dtype=np.float64)
+        testnet.bias[2] = np.array([i for i in range(5)], dtype=np.float64)
+        testnet.bias[3] = np.array([i for i in range(3)], dtype=np.float64)
+
+        x = np.array([i for i in range(3)])
+        s_pos = [np.zeros(i) for i in testnet.shape[1:]]
+        s_neg = [np.zeros(i) for i in testnet.shape[1:]]
+        beta, eta = 1, 1
+        testnet.update_weights(beta, eta, s_pos, s_neg, x)
+
+        # return testnet
+        
     @staticmethod
     def rho(v):
         """
@@ -216,7 +247,7 @@ class Equilibrium:
 
     def update_weights(self, beta, eta, s_pos, s_neg, x):
         """
-        Returns the gradient of the energy function evaluated at the current state.
+        Updates the weights by the gradient of the energy function evaluated at the current state.
         beta: clamping factor
         eta: learning rate
         s_pos: state from positive phase training
@@ -225,19 +256,15 @@ class Equilibrium:
         """
         act_neg = [self.rho(i) for i in s_neg]
         act_pos = [self.rho(j) for j in s_pos]
-        # get gradient
-        weight_shape = zip(self.shape[:-1], self.shape[1:])
-        grad_weight = [np.zeros(shape) for shape in weight_shape]
-        grad_bias = [np.zeros(shape) for shape in self.shape]
         # loop over non-input weight layers
-        # off by 1 in act_pos/act_neg??
-        for i in range(1, len(act_neg) - 1):
-            grad_weight[i] = (eta/beta) * (np.dot(act_pos[i-1],
-                                                 act_pos[i].T) - np.dot(act_neg[i-1], act_neg[i].T))
+        for i in range(1, len(self.state) - 1):
+            self.weights[i] -= (eta/beta) * (np.outer(act_pos[i-1], act_pos[i]) - np.outer(act_neg[i-1], act_neg[i]))
             # bias gradient
-            grad_bias[i] = (eta/beta) * (act_pos[i] - act_neg[i])
-            # input??? null
-        grad_weight[0] = (eta/beta) * (np.dot(x, act_pos[0].T) - np.dot(x, act_neg[0].T))
+            self.bias[i] -= (eta/beta) * (act_pos[i - 1] - act_neg[i - 1])
+            
+        self.weights[0] -= (eta/beta) * (np.outer(x, act_pos[0]) - np.outer(x, act_neg[0]))
+        # update the input bias??
+        # self.bias[0] -= 
 
     def clamped_energy_grad(self, x, y, beta):
         """
@@ -265,3 +292,4 @@ class Equilibrium:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    Equilibrium.test_update_weights()

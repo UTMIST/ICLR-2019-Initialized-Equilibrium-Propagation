@@ -1,7 +1,8 @@
 """
 Defines a model object.
 """
-from typing import List, Tuple
+from typing import Tuple
+
 import numpy as np
 
 
@@ -10,7 +11,7 @@ class Equilibrium:
     A neural net to be trained using equilibrium propagation.
     """
 
-    def __init__(self, shape: Tuple[int]):
+    def __init__(self, shape: Tuple[int, ...]):
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
         """
@@ -67,11 +68,11 @@ class Equilibrium:
         return ((v >= 0) & (v <= 1)).astype(int)
 
     @staticmethod
-    def init_weights(shape: List[int]):
+    def init_weights(shape: Tuple[int, ...]):
         """
         Initialize the weights according to Glorot/Bengio initialization.
 
-        >>> w = Equilibrium.init_weights([1, 2, 3])
+        >>> w = Equilibrium.init_weights((1, 2, 3))
         >>> len(w)
         2
         >>> w[0].shape

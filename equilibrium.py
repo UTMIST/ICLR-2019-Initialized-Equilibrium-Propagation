@@ -157,7 +157,7 @@ class Equilibrium:
         activations_prime = [self.rhoprime(i) for i in self.state]
         activations = [self.rho(i) for i in self.state]
 
-        state_grad = self.state.copy() # Just getting the shape right
+        state_grad = [np.zeros(i) for i in self.shape[1:]]
 
         for layer_index in range(len(state_grad)):
             activated_prime_state = activations_prime[layer_index]
@@ -200,7 +200,7 @@ class Equilibrium:
         # get gradient
         weight_shape = zip(self.shape[:-1], self.shape[1:])
         grad_weight = [np.zeros(shape) for shape in weight_shape]
-        grad_bias = [np.zeros(self.shape[i]) for i in range(0, len(self.shape))]
+        grad_bias = [np.zeros(i) for i in self.shape]
         # loop over non-input weight layers
         # off by 1 in act_pos/act_neg??
         for i in range(1, len(act_neg) - 1):

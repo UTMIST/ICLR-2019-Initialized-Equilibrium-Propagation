@@ -299,6 +299,15 @@ class Equilibrium:
         # update the input bias??
         # self.bias[0] -=
 
+    # TODO: feedforward prediction to help feedforward neurons learn a mapping from previous layer's activations to targets given by this network (formula 10)
+    def closer_energy(self, lamda, state, x):
+        """
+        lambda: hyperparameter that brings fixed-points of equilibrating network closer to states of forward pass
+        x: input neurons
+        state: states achieved by neurons in feedforward
+        """
+    
+
     def clamped_energy_grad(self, x, y, beta):
         """
         Returns the gradient of the clamped energy function evaluated at the current state and target.

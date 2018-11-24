@@ -13,6 +13,8 @@ class Equilibrium:
     def __init__(self, shape: Tuple[int, ...]):
         """
         Shape = [D1, D2, ..., DN] where Di the dimensionality of the ith layer in a FCN
+
+        Note: may need to change initialization of biases since input shouldn't have bias
         """
         self.shape = shape
         self.state = [np.zeros(i) for i in self.shape[1:]]
@@ -93,7 +95,21 @@ class Equilibrium:
         beta, eta = 1, 1
         testnet.update_weights(beta, eta, s_pos, s_neg, x)
 
-        # return testnet
+        return testnet
+
+    @staticmethod
+    def test_grad_check_state():
+        """
+        """
+        testnet = Equilibrium((3, 5, 3))
+        testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
+        testnet.weights[1] = np.array([[i for i in range(15)]]).reshape(5, 3)
+        testnet.bias[0] = np.array([i for i in range(3)])
+        testnet.bias[1] = np.array([i for i in range(5)])
+        testnet.bias[2] = np.array([i for i in range(3)])
+        testnet.state[0] = np.array([(2*i+1)/10 for i in range(5)])
+        testnet.state[1] = np.array([(2*i+1)/10 for i in range(3)])
+        testnet._energy_grad_state_check()
 
     @staticmethod
     def rho(v):
@@ -208,7 +224,7 @@ class Equilibrium:
     def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights, next_weights, next_activated_state):
         """Returns the gradient for the first state layer
 
-        >>> testnet = Equilibrium.get_test_network()
+        >>> testnet = Equilibrium.test_shapes()
         >>> curr_state = np.array([9, 9, 9, 9])
         >>> act_pr_st = np.array([4, 5, 6, 7])
         >>> bias = np.array([1, 1, 1, 1])
@@ -229,7 +245,7 @@ class Equilibrium:
         """
         Returns the gradient of the energy function evaluated at the current state.
 
-        >>> testnet = Equilibrium.get_test_network()
+        >>> testnet = Equilibrium.test_shapes()
         >>> testnet.shape
         (3, 4, 4, 3)
         >>> testnet.state
@@ -296,8 +312,7 @@ class Equilibrium:
             self.bias[i] -= (eta/beta) * (act_pos[i - 1] - act_neg[i - 1])
 
         self.weights[0] -= (eta/beta) * (np.outer(x, act_pos[0]) - np.outer(x, act_neg[0]))
-        # update the input bias??
-        # self.bias[0] -=
+
 
     # TODO: feedforward prediction to help feedforward neurons learn a mapping from previous layer's activations to targets given by this network (formula 10)
     def closer_energy(self, lamda, state, x):
@@ -314,24 +329,49 @@ class Equilibrium:
         """
         return self.energy_grad_state(x) + 2 * beta * (y - self.outputs())
 
-    def _energy_grad_state_check(self):
+    def _energy_grad_state_check(self, dh=10e-10):
         """
+        Verify that our energy function states are close to gradient
+        """
+        size = self.shape[0]
+        x = np.ones(size)
+        gradient = self.energy_grad_state(x)
+        for layer in range(len(self.state)):
+            for neuron in range(len(self.state[layer])):
+                self.state[layer][neuron] += dh
+                f_plus = self.energy(x)
+                self.state[layer][neuron] -= 2*dh
+                f_neg = self.energy(x)
+                grad_check = (f_plus - f_neg) / 2*dh
+                error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
+                if error >= 10e-6:
+                    stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(layer, neuron, error, grad_check, gradient[layer][neuron])
+                    print(stringg)
+ 
+    @staticmethod 
+    def calc_relative_error(a, b):
+        """
+        a and b two scalars
+        """
+        return abs(a-b) / (abs(a) + abs(b))
 
-        :return:
-        :rtype:
-        """
-        pass
 
-    def _energy_grad_weight_check(self):
+    def _energy_grad_weight_check(self, dh=10e-10):
         """
+        Verify that our weights are close to the true values. 
+        """
+        size = self.bias[0]
+        x = np.ones(size)
+        # weights
+        current_weights = 
 
-        :return:
-        :rtype:
-        """
-        pass
+        # biases
+
+        biases = 
 
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    Equilibrium.test_update_weights()
+    # Equilibrium.test_update_weights()
+    Equilibrium.test_grad_check_state()

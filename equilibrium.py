@@ -266,7 +266,7 @@ class Equilibrium:
         # But the sizes are right and the last 2 gradient vectors are all 0's, which is correct
         # (next_activated_state are 0).
 
-        # TODO: work out by hand what the gradients should be (refer to original code)
+        # TODO: how to do batching?
         activations_prime = [self.rhoprime(i) for i in self.state]
         activations = [self.rho(i) for i in self.state]
         state_grad = [np.zeros(i) for i in self.shape[1:]]
@@ -321,7 +321,7 @@ class Equilibrium:
         x: input neurons
         state: states achieved by neurons in feedforward
         """
-    
+
 
     def clamped_energy_grad(self, x, y, beta):
         """
@@ -347,8 +347,8 @@ class Equilibrium:
                 if error >= 10e-6:
                     stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(layer, neuron, error, grad_check, gradient[layer][neuron])
                     print(stringg)
- 
-    @staticmethod 
+
+    @staticmethod
     def calc_relative_error(a, b):
         """
         a and b two scalars
@@ -358,16 +358,16 @@ class Equilibrium:
 
     def _energy_grad_weight_check(self, dh=10e-10):
         """
-        Verify that our weights are close to the true values. 
+        Verify that our weights are close to the true values.
         """
         size = self.bias[0]
         x = np.ones(size)
-        # weights
-        current_weights = 
+        # # weights
+        # current_weights =
 
-        # biases
+        # # biases
 
-        biases = 
+        # biases =
 
 
 if __name__ == "__main__":

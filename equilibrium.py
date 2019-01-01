@@ -209,7 +209,12 @@ class Equilibrium:
     def energy(self, x):
         """
         Returns the energy of the net. (Equation 1).
+        If x is a minibatch of examples, return the average of the energy of the net on each of these examples.
         """
+        try:
+            batch_size = x.shape[1]
+        except IndexError:
+            batch_size = 1
         activated_states = [self.rho(i) for i in self.state]
         state_norm = sum([np.sum(state ** 2) for state in self.state]) / 2
         total_energy = state_norm
@@ -222,9 +227,9 @@ class Equilibrium:
             total_energy -= np.dot(state, bias)
 
         # input weights
-        total_energy -= np.dot(np.dot(self.weights[0].T, x), activated_states[0])
+        input_weights = np.dot(np.dot(self.weights[0].T, x).T, activated_states[0])
 
-        return total_energy
+        return np.sum(total_energy - input_weights) / batch_size
 
     def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
                   next_weights, next_activated_state):
@@ -346,7 +351,7 @@ class Equilibrium:
         Verify that our energy function states are close to gradient
         """
         size = self.shape[0]
-        x = np.ones(size)
+        x = np.ones((size, 1))
         gradient = self.energy_grad_state(x)
         for layer in range(len(self.state)):
             for neuron in range(len(self.state[layer])):

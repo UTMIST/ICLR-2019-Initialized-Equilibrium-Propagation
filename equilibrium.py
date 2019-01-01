@@ -5,6 +5,7 @@ from typing import Tuple
 
 import numpy as np
 
+
 class Equilibrium:
     """
     A neural net to be trained using equilibrium propagation.
@@ -92,7 +93,7 @@ class Equilibrium:
         x = np.array([i for i in range(3)])
         s_pos = [np.zeros(i) for i in testnet.shape[1:]]
         s_neg = [np.zeros(i) for i in testnet.shape[1:]]
-        beta, eta = 1, 1
+        beta, eta = 1, [1]
         testnet.update_weights(beta, eta, s_pos, s_neg, x)
 
         return testnet
@@ -185,25 +186,29 @@ class Equilibrium:
         """
         Negative phase training.
         """
+        batch_size = x.shape[-1]
+        state = [np.zeros((i, batch_size)) for i in self.shape[1:]]
         for _ in range(t_minus):
             grad = self.energy_grad_state(x)
             for i in range(len(self.state)):
-                self.state[i] -= epsilon * grad[i]
-        return self.state
+                state[i] -= epsilon * grad[i]
+        return state
 
     def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
         """
         Positive phase training.
         """
+        batch_size = x.shape[-1]
+        state = [np.zeros((i, batch_size)) for i in self.shape[1:]]
         for _ in range(t_plus):
-            grad = self.clamped_energy_grad(x, y, beta)
+            grad = self.clamped_energy_grad(state, x, y, beta)
             for i in range(len(self.state)):
-                self.state[i] -= epsilon * grad[i]
-        return self.state
+                state[i] -= epsilon * grad[i]
+        return state
 
     def energy(self, x):
         """
-        Returns the energy of the net.
+        Returns the energy of the net. (Equation 1).
         """
         activated_states = [self.rho(i) for i in self.state]
         state_norm = sum([np.sum(state ** 2) for state in self.state]) / 2
@@ -221,8 +226,9 @@ class Equilibrium:
 
         return total_energy
 
-    def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights, next_weights, next_activated_state):
-        """Returns the gradient for the first state layer
+    def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
+                  next_weights, next_activated_state):
+        """Returns the gradient for one state layer
 
         >>> testnet = Equilibrium.test_shapes()
         >>> curr_state = np.array([9, 9, 9, 9])
@@ -266,23 +272,24 @@ class Equilibrium:
         # But the sizes are right and the last 2 gradient vectors are all 0's, which is correct
         # (next_activated_state are 0).
 
-        # TODO: how to do batching?
-        activations_prime = [self.rhoprime(i) for i in self.state]
-        activations = [self.rho(i) for i in self.state]
-        state_grad = [np.zeros(i) for i in self.shape[1:]]
+        batch_size = x.shape[-1]
+        activations_prime = [self.rhoprime(layer) for layer in self.state]
+        activations = [self.rho(layer) for layer in self.state]
+        state_grad = [np.zeros((i, batch_size)) for i in self.shape[1:]]
         last_index = len(self.state) - 1
         size_last_layer = self.shape[-1]
 
         for layer_index in range(len(self.state)):
-            curr_state = self.state[layer_index]
-            activated_prime_state = activations_prime[layer_index]
+            curr_state = np.repeat(np.expand_dims(self.state[layer_index], axis=1), batch_size, axis=1)
+            activated_prime_state = np.repeat(np.expand_dims(activations_prime[layer_index], axis=1), batch_size, axis=1)
             prev_weights = self.weights[layer_index]
-            bias = self.bias[layer_index + 1]
+            bias = np.expand_dims(self.bias[layer_index + 1], axis=1)
 
-            prev_activated_state = x if layer_index == 0 else activations[layer_index - 1]
+            prev_activated_state = x if layer_index == 0 \
+                else np.repeat(np.expand_dims(activations[layer_index - 1], axis=1), batch_size, axis=1)
 
-            next_activated_state = np.zeros(size_last_layer) if layer_index == last_index \
-                else activations[layer_index + 1]
+            next_activated_state = np.zeros((size_last_layer, batch_size)) if layer_index == last_index \
+                else np.repeat(np.expand_dims(activations[layer_index + 1], axis=1), batch_size, axis=1)
 
             next_weights = np.zeros((size_last_layer, size_last_layer)) if layer_index == last_index \
                 else self.weights[layer_index + 1]
@@ -294,24 +301,26 @@ class Equilibrium:
 
         return state_grad
 
-    def update_weights(self, beta, eta, s_pos, s_neg, x):
+    def update_weights(self, beta, etas, s_pos, s_neg, x):
         """
         Updates the weights by the gradient of the energy function evaluated at the current state.
         beta: clamping factor
-        eta: learning rate
+        etas: learning rates (one for each layer)
         s_pos: state from positive phase training
         s_neg: state from negative phase training
-        x: input
+        x: a batch of inputs
         """
+        batch_size = x.shape[-1]
         act_neg = [self.rho(i) for i in s_neg]
         act_pos = [self.rho(j) for j in s_pos]
         # loop over non-input weight layers
         for i in range(1, len(self.state) - 1):
-            self.weights[i] -= (eta/beta) * (np.outer(act_pos[i-1], act_pos[i]) - np.outer(act_neg[i-1], act_neg[i]))
+            self.weights[i] -= (etas[i]/beta) * \
+                               (np.dot(act_pos[i-1], act_pos[i].T) - np.dot(act_neg[i-1], act_neg[i].T)) / batch_size
             # bias gradient
-            self.bias[i] -= (eta/beta) * (act_pos[i - 1] - act_neg[i - 1])
+            self.bias[i] -= (etas[i]/beta) * np.sum(act_pos[i - 1] - act_neg[i - 1], axis=1) / batch_size
 
-        self.weights[0] -= (eta/beta) * (np.outer(x, act_pos[0]) - np.outer(x, act_neg[0]))
+        self.weights[0] -= (etas[0]/beta) * (np.dot(x, act_pos[0].T) - np.dot(x, act_neg[0].T)) / batch_size
 
 
     # TODO: feedforward prediction to help feedforward neurons learn a mapping from previous layer's activations to targets given by this network (formula 10)
@@ -322,12 +331,15 @@ class Equilibrium:
         state: states achieved by neurons in feedforward
         """
 
-
-    def clamped_energy_grad(self, x, y, beta):
+    def clamped_energy_grad(self, state, x, y, beta):
         """
         Returns the gradient of the clamped energy function evaluated at the current state and target.
         """
-        return self.energy_grad_state(x) + 2 * beta * (y - self.outputs())
+        grad = self.energy_grad_state(x)
+        clamp = 2 * beta * (state[-1] - y)
+        clamped_grad = grad
+        clamped_grad[-1] += clamp
+        return clamped_grad
 
     def _energy_grad_state_check(self, dh=10e-10):
         """
@@ -345,7 +357,8 @@ class Equilibrium:
                 grad_check = (f_plus - f_neg) / 2*dh
                 error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
                 if error >= 10e-6:
-                    stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(layer, neuron, error, grad_check, gradient[layer][neuron])
+                    stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
+                        layer, neuron, error, grad_check, gradient[layer][neuron])
                     print(stringg)
 
     @staticmethod
@@ -354,7 +367,6 @@ class Equilibrium:
         a and b two scalars
         """
         return abs(a-b) / (abs(a) + abs(b))
-
 
     def _energy_grad_weight_check(self, dh=10e-10):
         """

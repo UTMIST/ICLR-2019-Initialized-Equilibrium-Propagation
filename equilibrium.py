@@ -82,9 +82,9 @@ class Equilibrium:
         # >>> testnet.update_weights(beta, eta, s_pos, s_neg, x)
         """
         testnet = Equilibrium((3, 4, 5, 3))
-        testnet.weights[0] = np.array([[i for i in range(12)]], dtype = np.float64).reshape(3, 4)
-        testnet.weights[1] = np.array([[i for i in range(20)]], dtype = np.float64).reshape(4, 5)
-        testnet.weights[2] = np.array([[i for i in range(15)]], dtype = np.float64).reshape(5, 3)
+        testnet.weights[0] = np.array([[i for i in range(12)]], dtype=np.float64).reshape(3, 4)
+        testnet.weights[1] = np.array([[i for i in range(20)]], dtype=np.float64).reshape(4, 5)
+        testnet.weights[2] = np.array([[i for i in range(15)]], dtype=np.float64).reshape(5, 3)
         testnet.bias[0] = np.array([i for i in range(3)], dtype=np.float64)
         testnet.bias[1] = np.array([i for i in range(4)], dtype=np.float64)
         testnet.bias[2] = np.array([i for i in range(5)], dtype=np.float64)
@@ -101,6 +101,7 @@ class Equilibrium:
     @staticmethod
     def test_grad_check_state():
         """
+        Checking gradient computation wrt states.
         """
         testnet = Equilibrium((3, 5, 3))
         testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
@@ -191,7 +192,7 @@ class Equilibrium:
         for _ in range(t_minus):
             grad = self.energy_grad_state(x)
             for i in range(len(self.state)):
-                state[i] -= epsilon * grad[i]
+                state[i] += epsilon * grad[i]
         return state
 
     def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
@@ -203,7 +204,7 @@ class Equilibrium:
         for _ in range(t_plus):
             grad = self.clamped_energy_grad(state, x, y, beta)
             for i in range(len(self.state)):
-                state[i] -= epsilon * grad[i]
+                state[i] += epsilon * grad[i]
         return state
 
     def energy(self, x):
@@ -233,16 +234,17 @@ class Equilibrium:
 
     def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
                   next_weights, next_activated_state):
-        """Returns the gradient for one state layer
+        """
+        Returns the (negative) gradient for one state layer. (Equation 2)
 
         >>> testnet = Equilibrium.test_shapes()
         >>> curr_state = np.array([9, 9, 9, 9])
         >>> act_pr_st = np.array([4, 5, 6, 7])
         >>> bias = np.array([1, 1, 1, 1])
-        >>> prev_activated_state = np.array([1,2,3])
-        >>> prev_w = np.zeros((3,4))
+        >>> prev_activated_state = np.array([1, 2, 3])
+        >>> prev_w = np.zeros((3, 4))
         >>> next_w = np.eye(4)
-        >>> next_act_st = np.array([7,8,9,10])
+        >>> next_act_st = np.array([7, 8, 9, 10])
         >>> testnet.calc_grad(curr_state, act_pr_st, bias, prev_activated_state, prev_w, next_w, next_act_st)
         array([23., 36., 51., 68.])
         """
@@ -278,28 +280,28 @@ class Equilibrium:
         # (next_activated_state are 0).
 
         batch_size = x.shape[-1]
-        activations_prime = [self.rhoprime(layer) for layer in self.state]
-        activations = [self.rho(layer) for layer in self.state]
-        state_grad = [np.zeros((i, batch_size)) for i in self.shape[1:]]
         last_index = len(self.state) - 1
         size_last_layer = self.shape[-1]
 
+        activations_prime = [self.rhoprime(layer) for layer in self.state]
+        activations = [self.rho(layer) for layer in self.state]
+
+        state_grad = [np.zeros((i, batch_size)) for i in self.shape[1:]]
+
         for layer_index in range(len(self.state)):
+            # get states, repeating to allow for minibatches
             curr_state = np.repeat(np.expand_dims(self.state[layer_index], axis=1), batch_size, axis=1)
             activated_prime_state = np.repeat(np.expand_dims(activations_prime[layer_index], axis=1), batch_size, axis=1)
-            prev_weights = self.weights[layer_index]
-            bias = np.expand_dims(self.bias[layer_index + 1], axis=1)
-
             prev_activated_state = x if layer_index == 0 \
                 else np.repeat(np.expand_dims(activations[layer_index - 1], axis=1), batch_size, axis=1)
-
             next_activated_state = np.zeros((size_last_layer, batch_size)) if layer_index == last_index \
                 else np.repeat(np.expand_dims(activations[layer_index + 1], axis=1), batch_size, axis=1)
+            bias = np.expand_dims(self.bias[layer_index + 1], axis=1)
 
+            # get weights
+            prev_weights = self.weights[layer_index]
             next_weights = np.zeros((size_last_layer, size_last_layer)) if layer_index == last_index \
                 else self.weights[layer_index + 1]
-
-            # print(activated_prime_state, bias, prev_activated_state, next_activated_state, next_weights)
 
             state_grad[layer_index] = self.calc_grad(curr_state, activated_prime_state, bias, prev_activated_state,
                                                      prev_weights, next_weights, next_activated_state)
@@ -327,14 +329,13 @@ class Equilibrium:
 
         self.weights[0] -= (etas[0]/beta) * (np.dot(x, act_pos[0].T) - np.dot(x, act_neg[0].T)) / batch_size
 
-
-    # TODO: feedforward prediction to help feedforward neurons learn a mapping from previous layer's activations to targets given by this network (formula 10)
     def closer_energy(self, lamda, state, x):
         """
         lambda: hyperparameter that brings fixed-points of equilibrating network closer to states of forward pass
         x: input neurons
         state: states achieved by neurons in feedforward
         """
+        # TODO (Equation 10)
 
     def clamped_energy_grad(self, state, x, y, beta):
         """
@@ -343,10 +344,10 @@ class Equilibrium:
         grad = self.energy_grad_state(x)
         clamp = 2 * beta * (state[-1] - y)
         clamped_grad = grad
-        clamped_grad[-1] += clamp
+        clamped_grad[-1] -= clamp
         return clamped_grad
 
-    def _energy_grad_state_check(self, dh=10e-10):
+    def _energy_grad_state_check(self, dh=10e-5):
         """
         Verify that our energy function states are close to gradient
         """

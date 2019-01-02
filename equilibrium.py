@@ -232,7 +232,8 @@ class Equilibrium:
 
         return np.sum(total_energy - input_weights) / batch_size
 
-    def calc_grad(self, curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
+    @staticmethod
+    def calc_grad(curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
                   next_weights, next_activated_state):
         """
         Returns the (negative) gradient for one state layer. (Equation 2)
@@ -290,8 +291,10 @@ class Equilibrium:
 
         for layer_index in range(len(self.state)):
             # get states, repeating to allow for minibatches
-            curr_state = np.repeat(np.expand_dims(self.state[layer_index], axis=1), batch_size, axis=1)
-            activated_prime_state = np.repeat(np.expand_dims(activations_prime[layer_index], axis=1), batch_size, axis=1)
+            curr_state = \
+                np.repeat(np.expand_dims(self.state[layer_index], axis=1), batch_size, axis=1)
+            activated_prime_state = \
+                np.repeat(np.expand_dims(activations_prime[layer_index], axis=1), batch_size, axis=1)
             prev_activated_state = x if layer_index == 0 \
                 else np.repeat(np.expand_dims(activations[layer_index - 1], axis=1), batch_size, axis=1)
             next_activated_state = np.zeros((size_last_layer, batch_size)) if layer_index == last_index \
@@ -303,8 +306,9 @@ class Equilibrium:
             next_weights = np.zeros((size_last_layer, size_last_layer)) if layer_index == last_index \
                 else self.weights[layer_index + 1]
 
-            state_grad[layer_index] = self.calc_grad(curr_state, activated_prime_state, bias, prev_activated_state,
-                                                     prev_weights, next_weights, next_activated_state)
+            state_grad[layer_index] = Equilibrium.calc_grad(curr_state, activated_prime_state, bias,
+                                                            prev_activated_state, prev_weights,
+                                                            next_weights, next_activated_state)
 
         return state_grad
 
@@ -347,7 +351,7 @@ class Equilibrium:
         clamped_grad[-1] -= clamp
         return clamped_grad
 
-    def _energy_grad_state_check(self, dh=10e-5):
+    def _energy_grad_state_check(self, dh=10e-15):
         """
         Verify that our energy function states are close to gradient
         """
@@ -356,11 +360,16 @@ class Equilibrium:
         gradient = self.energy_grad_state(x)
         for layer in range(len(self.state)):
             for neuron in range(len(self.state[layer])):
+
+                # get gradient with finite differences
                 self.state[layer][neuron] += dh
                 f_plus = self.energy(x)
                 self.state[layer][neuron] -= 2*dh
                 f_neg = self.energy(x)
-                grad_check = (f_plus - f_neg) / 2*dh
+                self.state[layer][neuron] += dh
+
+                grad_check = (f_plus - f_neg) / (2*dh)
+
                 error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
                 if error >= 10e-6:
                     stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
@@ -378,6 +387,7 @@ class Equilibrium:
         """
         Verify that our weights are close to the true values.
         """
+        # TODO
         size = self.bias[0]
         x = np.ones(size)
         # # weights

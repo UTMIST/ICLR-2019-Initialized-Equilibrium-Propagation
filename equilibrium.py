@@ -363,12 +363,12 @@ class Equilibrium:
 
                 # get gradient with finite differences
                 self.state[layer][neuron] += dh
-                f_plus = self.energy(x)
+                f_pos = self.energy(x)
                 self.state[layer][neuron] -= 2*dh
                 f_neg = self.energy(x)
                 self.state[layer][neuron] += dh
 
-                grad_check = (f_plus - f_neg) / (2*dh)
+                grad_check = (f_neg - f_pos) / (2*dh)  # negative gradient
 
                 error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
                 if error >= 10e-6:

@@ -2,6 +2,7 @@
 Defines a model object.
 """
 from typing import Tuple
+from utilities import calc_relative_error
 
 import numpy as np
 
@@ -218,8 +219,8 @@ class Equilibrium:
         return np.sum(total_energy - input_weights) / batch_size
 
     @staticmethod
-    def calc_grad(curr_state, activated_prime_state, bias, prev_activated_state, prev_weights,
-                  next_weights, next_activated_state):
+    def calc_grad(curr_state, activated_prime_state, bias, prev_activated_state,
+                  prev_weights, next_weights, next_activated_state):
         """
         Returns the (negative) gradient for one state layer. (Equation 2)
 
@@ -336,13 +337,6 @@ class Equilibrium:
         clamped_grad[-1] -= clamp
         return clamped_grad
 
-    @staticmethod
-    def calc_relative_error(a, b):
-        """
-        a and b two scalars
-        """
-        return abs(a-b) / (abs(a) + abs(b))
-
     def _energy_grad_weight_check(self, dh=10e-10):
         """
         Verify that our weights are close to the true values.
@@ -377,15 +371,12 @@ class Equilibrium:
 
                 grad_check = (f_neg - f_pos) / (2*dh)  # negative gradient
 
-                error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
+                error = calc_relative_error(gradient[layer][neuron], grad_check)
                 assert error < 10e-6, \
                     "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
                         layer, neuron, error, grad_check, gradient[layer][neuron]
                     )
 
-
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    # Equilibrium.test_update_weights()
-    Equilibrium.test_grad_check_state()

@@ -351,7 +351,7 @@ class Equilibrium:
 
         # biases =
 
-    #TODO: refactor
+    # TODO: refactor
     def _energy_grad_state_check(self, dh=10e-15):
         """
         Verify that our energy function states are close to gradient
@@ -362,20 +362,22 @@ class Equilibrium:
         for layer in range(len(self.state)):
             for neuron in range(len(self.state[layer])):
 
-                # get gradient with finite differences
+                # perturb one entry in state in both directions
                 self.state[layer][neuron] += dh
                 f_pos = self.energy(x)
                 self.state[layer][neuron] -= 2*dh
                 f_neg = self.energy(x)
                 self.state[layer][neuron] += dh
 
-                grad_check = (f_neg - f_pos) / (2*dh)  # negative gradient
+                # estimate negative gradient with finite differences
+                grad_check = (f_neg - f_pos) / (2*dh)
 
                 error = calc_relative_error(gradient[layer][neuron], grad_check)
                 assert error < 10e-6, \
                     "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
                         layer, neuron, error, grad_check, gradient[layer][neuron]
                     )
+
 
 if __name__ == "__main__":
     import doctest

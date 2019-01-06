@@ -30,8 +30,8 @@ class EquilibriumNet:
         >>> new_net = EquilibriumNet(28*28, [500, 500], 10)
         >>> new_net.shape
         [784, 500, 500, 10]
-        >>> len(new_net.weights), len(new_net.biases)
-        (3, 3)
+        >>> len(new_net.state_particles), len(new_net.weights), len(new_net.biases)
+        (3, 3, 3)
         """
         self.device = kwargs.get("device")
         if self.device is None:
@@ -41,6 +41,11 @@ class EquilibriumNet:
         self.shape = [input_size]
         self.shape.extend(layer_sizes)
         self.shape.append(output_size)
+
+        # Initialize the state particles for equilibrium propagation
+        self.state_particles = [
+            torch.zeros(D) for D in self.shape[1:]
+        ]
 
         # Initialize the weights
         self.weights = [

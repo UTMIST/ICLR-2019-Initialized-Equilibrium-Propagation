@@ -1,3 +1,6 @@
+"""
+Defines an equilibrium propagation network model
+"""
 import torch
 
 from typing import List
@@ -24,6 +27,8 @@ class EquilibriumNet:
         self.device = kwargs.get("device")
         if self.device is None:
             self.device = torch.device(self.get_default_device())
+
+
 
 
 

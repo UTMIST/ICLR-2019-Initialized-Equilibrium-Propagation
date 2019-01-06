@@ -26,7 +26,7 @@ class Initial:
         The activation function to be used, here a hard sigmoid
 
         >>> v = [1, 2, -1, -2, 0.5, -0.5]
-        >>> Initial.rho(v)
+        >>> Initial.h(v)
         array([1. , 1. , 0. , 0. , 0.5, 0. ])
         """
         # TODO: add leak
@@ -39,7 +39,7 @@ class Initial:
         The gradient of the activation function to be used, here a hard sigmoid
 
         >>> v = [0.9, 2, -1, -2, 0.5, -0.5]
-        >>> Equilibrium.rhoprime(v)
+        >>> Initial.hprime(v)
         array([1, 0, 0, 0, 1, 0])
         """
         # TODO: add leak
@@ -51,7 +51,7 @@ class Initial:
         """
         Initialize the weights according to Glorot/Bengio initialization.
 
-        >>> w = Equilibrium.init_weights([1, 2, 3])
+        >>> w = Initial.init_weights([1, 2, 3])
         >>> len(w)
         2
         >>> w[0].shape
@@ -101,3 +101,7 @@ class Initial:
         Returns the gradient of the energy function evaluated at the current state.
         """
         # outer product
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

@@ -9,6 +9,11 @@ class EquilibriumNet:
     """
     A fully connected equilibrium propagation network
     """
+
+    # The shape of the equilibrium propagation network as a fully connected
+    # network
+    shape : List[int]
+
     @staticmethod
     def get_default_device():
         """
@@ -23,16 +28,20 @@ class EquilibriumNet:
         output size and fully connected layer sizes on a given device
 
         >>> new_net = EquilibriumNet(28*28, [500, 500], 10)
+        >>> new_net.shape
+        [784, 500, 500, 10]
         """
         self.device = kwargs.get("device")
         if self.device is None:
             self.device = torch.device(self.get_default_device())
 
+        # Get the shape array
+        self.shape = [input_size]
+        self.shape.extend(layer_sizes)
+        self.shape.append(output_size)
 
 
-
-
-
-if __name__ == "name":
+if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    print("Doctests complete")

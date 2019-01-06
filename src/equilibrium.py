@@ -58,6 +58,15 @@ class EquilibriumNet:
             torch.randn(D, device=self.device) for D in self.shape[:-1]
         ]
 
+    @staticmethod
+    def rho(v):
+        """
+        The activation function to be used, here a hard sigmoid
+        >>> EquilibriumNet.rho(torch.tensor([1, 2, -1, -2, 0.5, -0.5]))
+        tensor([1.0000, 1.0000, 0.0000, 0.0000, 0.5000, 0.0000])
+        """
+        return torch.clamp(v, 0, 1)
+
 
 if __name__ == "__main__":
     import doctest

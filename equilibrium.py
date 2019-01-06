@@ -99,21 +99,6 @@ class Equilibrium:
         return testnet
 
     @staticmethod
-    def test_grad_check_state():
-        """
-        Checking gradient computation wrt states.
-        """
-        testnet = Equilibrium((3, 5, 3))
-        testnet.weights[0] = np.array([[i for i in range(15)]]).reshape(3, 5)
-        testnet.weights[1] = np.array([[i for i in range(15)]]).reshape(5, 3)
-        testnet.bias[0] = np.array([i for i in range(3)])
-        testnet.bias[1] = np.array([i for i in range(5)])
-        testnet.bias[2] = np.array([i for i in range(3)])
-        testnet.state[0] = np.array([(2*i+1)/10 for i in range(5)])
-        testnet.state[1] = np.array([(2*i+1)/10 for i in range(3)])
-        testnet._energy_grad_state_check()
-
-    @staticmethod
     def rho(v):
         """
         The activation function to be used, here a hard sigmoid
@@ -351,31 +336,6 @@ class Equilibrium:
         clamped_grad[-1] -= clamp
         return clamped_grad
 
-    def _energy_grad_state_check(self, dh=10e-15):
-        """
-        Verify that our energy function states are close to gradient
-        """
-        size = self.shape[0]
-        x = np.ones((size, 1))
-        gradient = self.energy_grad_state(x)
-        for layer in range(len(self.state)):
-            for neuron in range(len(self.state[layer])):
-
-                # get gradient with finite differences
-                self.state[layer][neuron] += dh
-                f_pos = self.energy(x)
-                self.state[layer][neuron] -= 2*dh
-                f_neg = self.energy(x)
-                self.state[layer][neuron] += dh
-
-                grad_check = (f_neg - f_pos) / (2*dh)  # negative gradient
-
-                error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
-                if error >= 10e-6:
-                    stringg = "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
-                        layer, neuron, error, grad_check, gradient[layer][neuron])
-                    print(stringg)
-
     @staticmethod
     def calc_relative_error(a, b):
         """
@@ -396,6 +356,32 @@ class Equilibrium:
         # # biases
 
         # biases =
+
+    #TODO: refactor
+    def _energy_grad_state_check(self, dh=10e-15):
+        """
+        Verify that our energy function states are close to gradient
+        """
+        size = self.shape[0]
+        x = np.ones((size, 1))
+        gradient = self.energy_grad_state(x)
+        for layer in range(len(self.state)):
+            for neuron in range(len(self.state[layer])):
+
+                # get gradient with finite differences
+                self.state[layer][neuron] += dh
+                f_pos = self.energy(x)
+                self.state[layer][neuron] -= 2*dh
+                f_neg = self.energy(x)
+                self.state[layer][neuron] += dh
+
+                grad_check = (f_neg - f_pos) / (2*dh)  # negative gradient
+
+                error = Equilibrium.calc_relative_error(gradient[layer][neuron], grad_check)
+                assert error < 10e-6, \
+                    "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
+                        layer, neuron, error, grad_check, gradient[layer][neuron]
+                    )
 
 
 if __name__ == "__main__":

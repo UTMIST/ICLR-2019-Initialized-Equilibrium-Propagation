@@ -207,7 +207,7 @@ class Equilibrium:
         total_energy = state_norm
 
         for state, next_state, weights in zip(activated_states[:-1], activated_states[1:], self.weights[1:]):
-            total_energy -= 2 * np.dot(np.dot(weights.T, state), next_state)
+            total_energy -= np.dot(np.dot(weights.T, state), next_state)
 
         # non-input biases
         for state, bias in zip(activated_states, self.bias[1:]):
@@ -373,7 +373,7 @@ class Equilibrium:
                 grad_check = (f_neg - f_pos) / (2*dh)
 
                 error = calc_relative_error(gradient[layer][neuron], grad_check)
-                assert error < 10e-6, \
+                assert error < 10e-3, \
                     "layer: {} neuron: {} error: {} grad check: {} true grad: {}".format(
                         layer, neuron, error, grad_check, gradient[layer][neuron]
                     )

@@ -6,7 +6,6 @@ import os
 
 import mnist
 import numpy as np
-from PIL import Image
 import pandas as pd
 
 
@@ -46,7 +45,7 @@ def load_data(train_ratio):
     train = train[0].T, pd.get_dummies(train[1]).values.T
     val = val[0].T, pd.get_dummies(val[1]).values.T
     test = test[0].T, pd.get_dummies(test[1]).values.T
-    
+
     return train, val, test
 
 

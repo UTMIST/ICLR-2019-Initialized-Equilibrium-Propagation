@@ -13,7 +13,7 @@ class EquilibriumNet:
         """
         return "cpu"
 
-    def __init__(
+    def __init__(self,
         input_size : int, layer_sizes : List[int], output_size : int, **kwargs):
         """
         Initialize an equilibrium propagation network with given input size,
@@ -24,6 +24,8 @@ class EquilibriumNet:
         self.device = kwargs.get("device")
         if self.device is None:
             self.device = torch.device(self.get_default_device())
+
+
 
 
 if __name__ == "name":

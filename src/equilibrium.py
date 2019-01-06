@@ -30,8 +30,8 @@ class EquilibriumNet:
         >>> new_net = EquilibriumNet(28*28, [500, 500], 10)
         >>> new_net.shape
         [784, 500, 500, 10]
-        >>> len(new_net.weights)
-        3
+        >>> len(new_net.weights), len(new_net.biases)
+        (3, 3)
         """
         self.device = kwargs.get("device")
         if self.device is None:
@@ -46,6 +46,11 @@ class EquilibriumNet:
         self.weights = [
             torch.randn(D_in, D_out, device=self.device) for (D_in, D_out) in
                 zip(self.shape[:-1], self.shape[1:])
+        ]
+
+        # Initialize the bias
+        self.biases = [
+            torch.randn(D, device=self.device) for D in self.shape[:-1]
         ]
 
 

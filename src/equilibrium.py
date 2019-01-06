@@ -19,7 +19,7 @@ class EquilibriumNet:
         """
         Get the default device for the equilibrium network's components
         """
-        return "cpu"
+        return None
 
     def __init__(self,
         input_size : int, layer_sizes : List[int], output_size : int, **kwargs):
@@ -35,7 +35,7 @@ class EquilibriumNet:
         """
         self.device = kwargs.get("device")
         if self.device is None:
-            self.device = torch.device(self.get_default_device())
+            self.device = self.get_default_device()
 
         # Get the shape array
         self.shape = [input_size]

@@ -67,6 +67,17 @@ class EquilibriumNet:
         """
         return torch.clamp(v, 0, 1)
 
+    @staticmethod
+    def rhoprime(v):
+        """
+        The gradient of the activation function to be used (a hard sigmoid),
+        here just a Boolean function denoting whether the value is in the
+        clamp range
+        >>> EquilibriumNet.rhoprime(torch.tensor([0.9, 2, -1, -2, 0.5, -0.5]))
+        tensor([1., 0., 0., 0., 1., 0.])
+        """
+        return (torch.gt(v, 0) & torch.lt(v, 1)).type(torch.Tensor)
+
 
 if __name__ == "__main__":
     import doctest

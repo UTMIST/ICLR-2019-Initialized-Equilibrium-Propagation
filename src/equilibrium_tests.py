@@ -20,12 +20,15 @@ def test_energy():
     second = torch.cat((first, l4), 0)
     bias_sum = torch.sum(b * rho(second))
 
-    prod1 = torch.dot(torch.mv(w2.T, l3), l2)
-    prod2 = torch.dot(torch.mv(w3.T, l4), l3)
+    prod1 = torch.dot(torch.mv(w2.T, rho(l3)), rho(l2))
+    prod2 = torch.dot(torch.mv(w3.T, rho(l4)), rho(l3))
     tensor_product = sum(prod1, prod2)
 
-    input_sums = -torch.mv(x, torch.mv(w1.T, l2))  # Apply rho to l2?
+    input_sums = -torch.mv(x, torch.mv(w1.T, rho(l2)))
 
-    energy = input_sums.add(squared_norm - bias_sum - tensor_product)
+    expected_energy = input_sums.add(squared_norm - bias_sum - tensor_product)
 
-    assert True  # compare with class
+    net = EquilibriumNet(3, [3, 2], 2)  # TODO: arguments. Force our biases and weights onto the net
+    actual_energy = net.energy(x)
+
+    assert expected_energy == actual_energy

@@ -170,7 +170,7 @@ class EquilibriumNet:
         )
 
         # Now, we compute the energy for each element of x
-        return input_sums.add(squared_norm - bias_sum - next_weights)
+        return input_sums.add(squared_norm - bias_sum - tensor_product)
 
 
 if __name__ == "__main__":

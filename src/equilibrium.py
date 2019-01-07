@@ -149,14 +149,14 @@ class EquilibriumNet:
         # Matrix product of the weight matrix for a layer and the activation of
         # neurons in that layer.
         next_weights = [
-            torch.mm(torch.t(W), rho(s_out).long()) for W, s_out in
+            torch.mm(W, rho(s_out)) for W, s_out in
                 zip(self.weights[1:], self.layer_state_particles[1:])
         ]
 
         # Dot product of said matrix products and the activations of the vectors
         # connected to j, summed over all layers
         tensor_product = sum(
-            [torch.matmul(torch.t(pr), rho(s_in).long()) for pr, s_in in
+            [torch.matmul(torch.t(pr), rho(s_in)) for pr, s_in in
                 zip(next_weights, self.layer_state_particles[:-1])]
         )
 
@@ -167,7 +167,7 @@ class EquilibriumNet:
         # the first are connected to the input neurons, and hence we need only
         # consider these
         input_sums = -torch.mm(
-            x, torch.mm(torch.t(self.weights[0]), self.layer_state_particles[0].long())
+            x, torch.mm(torch.t(self.weights[0]), self.layer_state_particles[0])
         )
 
         # Now, we compute the energy for each element of x

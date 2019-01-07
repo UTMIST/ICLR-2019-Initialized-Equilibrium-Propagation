@@ -51,20 +51,9 @@ def test_energy_grad_state():
     """
     Check energy_grad_state is correct using finite differences.
     """
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    w1 = torch.tensor([[3, 9, 5], [1, 2, 7], [3, 3, 2]])
-    w2 = torch.tensor([[3, 8, 8], [9, 5, 1]])
-    w3 = torch.tensor([[9, 2], [2, 0]])
-    b = torch.tensor([1, 2, 3, 4, 5, 6, 7])  # for l2, l3, l4
-
-    l2 = torch.tensor([9, 4, 6])
-    l3 = torch.tensor([5, 3])
-    l4 = torch.tensor([4, 5])
+    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
 
     network = EquilibriumNet(3, [3, 2], 2, 2)
-    network.weights = [w1, w2, w3]
-    network.biases = b
-    network.state_particles = torch.cat([l2, l3, l4])
 
     # perform gradient checking with finite differences
     dh = 10e-5
@@ -88,20 +77,9 @@ def test_energy_grad_weight():
     """
     Check energy_grad_weight using finite differences.
     """
-    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
-    w1 = torch.tensor([[3, 9, 5], [1, 2, 7], [3, 3, 2]])
-    w2 = torch.tensor([[3, 8, 8], [9, 5, 1]])
-    w3 = torch.tensor([[9, 2], [2, 0]])
-    b = torch.tensor([1, 2, 3, 4, 5, 6, 7])  # for l2, l3, l4
-
-    l2 = torch.tensor([9, 4, 6])
-    l3 = torch.tensor([5, 3])
-    l4 = torch.tensor([4, 5])
+    x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
 
     network = EquilibriumNet(3, [3, 2], 2, 2)
-    network.weights = [w1, w2, w3]
-    network.biases = b
-    network.state_particles = torch.cat([l2, l3, l4])
 
     # perform gradient checking with finite differences
     dh = 10e-5

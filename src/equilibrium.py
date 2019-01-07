@@ -128,7 +128,7 @@ class EquilibriumNet:
 
         # Squared norm of the state
         # LaTeX: \frac{1}{2}\sum_{i \in \mathcal{S}}s_i^2
-        squared_norm = torch.sum(self.state_particles ** 2)
+        squared_norm = torch.sum(self.state_particles ** 2) / 2
 
 
         # Product of bias and state activation

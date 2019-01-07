@@ -135,7 +135,7 @@ class EquilibriumNet:
         # Product of bias and state activation
         # LaTeX: \sum_{i \in \mathcal{S}}b_i\rho(s_i)
         bias_sum = torch.sum(
-            self.biases * rho(self.state_particles))
+            torch.matmul(self.biases, rho(self.state_particles)))
 
         # Tensor product of weight matrix, activation of non-state neurons j and
         # activation of non-state neurons i connected to j

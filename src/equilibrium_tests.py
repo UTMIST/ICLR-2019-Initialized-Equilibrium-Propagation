@@ -38,7 +38,7 @@ def test_energy():
 
     net = EquilibriumNet(3, [3, 2], 2, 2)
 
-    net.biases = b
+    net.biases = torch.tensor([float(x) for x in b])
     net.weights = [w1, w2, w3]
     net.layer_state_particles = [l2, l3, l4]
 

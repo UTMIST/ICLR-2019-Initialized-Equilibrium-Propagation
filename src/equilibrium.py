@@ -124,7 +124,8 @@ class EquilibriumNet:
         current state for each input in x, where x is a tensor of shape
         (minibatch_size, input_size)
         """
-        assert x.shape == (self.minibatch_size, self.input_size)
+        # 2nd argument was self.input_size. -Matt
+        assert x.shape == (self.minibatch_size, self.shape[0])
 
         # Squared norm of the state
         # LaTeX: \frac{1}{2}\sum_{i \in \mathcal{S}}s_i^2

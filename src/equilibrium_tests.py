@@ -39,11 +39,14 @@ def test_energy():
     net = EquilibriumNet(3, [3, 2], 2, 2)
 
     net.biases = torch.tensor([float(x) for x in b])
-    net.weights = [w1, w2, w3]
-    net.layer_state_particles = [l2, l3, l4]
+    net.weights = [w1T, w2T, w3T]
+    net.state_particles = torch.cat([l2, l3, l4])
 
     actual_energy = net.energy(x)
-
+#     print(actual_energy.shape)
+#     print(expected_energy.shape)
+    print(actual_energy)
+    print(expected_energy)
     assert expected_energy == actual_energy
 
 

@@ -32,11 +32,11 @@ class EquilibriumNet:
 
     # The shape of the equilibrium propagation network as a fully connected
     # network
-    shape: List[int]
-    partial_sums: List[int]
+    # shape: List[int]
+    # partial_sums: List[int]
 
     # The size of minibatches to be fed into the equilibrium propagation network
-    minibatch_size : int
+    # minibatch_size : int
 
     @staticmethod
     def get_default_device():

@@ -227,6 +227,62 @@ class EquilibriumNet:
 
         return weight_grad, bias_grad
 
+    def negative_phase(self, x, t_minus: int, epsilon: float):
+        """
+        Negative phase training.
+        """
+        self.state_particles = torch.zeros(self.partial_sums[-1], self.minibatch_size)
+        for _ in range(t_minus):
+            grad = self.energy_grad_state(x)
+            # update the state
+            # TODO: shape of the grad? is it negative or positive grad?
+            self.state_particles -= epsilon * grad
+        return self.state_particles 
+
+    def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
+        """
+        Positive phase training.
+        """
+        self.state_particles = torch.zeros(self.partial_sums[-1], self.minibatch_size)
+        for _ in range(t_plus):
+            grad = self.clamped_energy_grad(x, y, beta)
+            # update the state
+            # TODO: shape of the grad? is it negative or positive grad?
+            self.state_particles -= epsilon * grad 
+        return self.state_particles
+
+    def clamped_energy_grad(self, x, y, beta: float):
+        """
+        Returns the gradient of the clamped energy function evaluated at the current state and input
+        """
+        # get weight of gradient
+        grad = self.energy_grad_stat(x)
+        # state particles for each layer
+        clamp = beta * (self.layer_state_particles[-1] - y) # TODO: is it 2?
+        # want to get the last part 
+        clamped_grad = grad + torch.cat(torch.zeros(self.partial_sums[-2], self.minibatch_size), clamp)
+        
+        return clamped_grad
+
+    def update_weights(self, beta, etas, s_pos, s_neg, x):
+        """
+        Updates weights based on weights gradient
+        """
+        # get weight gradient, separate learning rates for each layer
+        weight_grad_pos, bias_grad_pos = self.energy_grad_weight(s_pos, x) 
+        weight_grad_neg, bias_grad_neg = self.energy_grad_weight(s_neg, x) 
+        # update the weights
+        for i in range(len(self.shape) - 1):
+            self.weights[i] -= (etas[i]/beta) * (weight_grad_pos[i] - weight_grad_neg[i])
+        # update the biases
+        # multiply different sections of vector by different learning rates eta
+        bias_update = torch.zeros(self.partial_sums[-1])
+        for (b, e) in zip(self.partial_sums[:-1], self.partial_sums[1:]):
+            bias_update += torch.cat([torch.zeros(b), 
+                                    (etas[i]/beta) * (bias_grad_pos[b:e] - bias_grad_neg[b:e]),
+                                    torch.zeros(self.partial_sums[-1] - e)])
+        self.biases -= bias_update 
+        # TODO: assert update is correct
 
 if __name__ == "__main__":
     import doctest

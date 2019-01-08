@@ -36,18 +36,19 @@ def test_energy():
 
     expected_energy = input_sums.add(squared_norm - bias_sum - tensor_product)
 
-    net = EquilibriumNet(3, [3, 2], 2, 2)
-
-    net.biases = torch.tensor([float(x) for x in b])
-    net.weights = [w1T, w2T, w3T]
-    net.state_particles = torch.cat([l2, l3, l4])
+    net = EquilibriumNet(
+        3, [3, 2], 2, 2,
+        biases = torch.tensor([float(x) for x in b]),
+        weights = [w1T, w2T, w3T],
+        initial_state = torch.cat([l2, l3, l4])
+        )
 
     actual_energy = net.energy(x)
 #     print(actual_energy.shape)
 #     print(expected_energy.shape)
     print(actual_energy)
     print(expected_energy)
-    assert expected_energy == actual_energy
+    assert torch.allclose(actual_energy, expected_energy)
 
 
 def test_energy_grad_state():

@@ -45,7 +45,7 @@ class EquilibriumNet:
         """
         return None
 
-    def set_batch_size(self, minibatch_size : int):
+    def set_batch_size(self, minibatch_size : int, **kwargs):
         """
         Reinitialize the state with the given minibatch size
         """
@@ -54,14 +54,27 @@ class EquilibriumNet:
         self.minibatch_size = minibatch_size
 
         # Initialize the state particles for equilibrium propagation
-        self.state_particles = torch.zeros(self.partial_sums[-1], minibatch_size)
+        self.state_particles = kwargs.get("initial_state")
+        if self.state_particles is None:
+            self.state_particles =\
+                torch.zeros(self.partial_sums[-1], minibatch_size)
+        elif len(self.state_particles.shape) == 1:
+            self.state_particles = torch.t(
+                self.state_particles.repeat(minibatch_size, 1))
+            assert self.state_particles.shape[0] == self.partial_sums[-1],\
+                "Got shape {}, expected length {}".format(
+                    self.state_particles.shape, self.partial_sums[-1]
+                )
+        else:
+            assert tuple(self.state_particles.shape) == (
+                self.partial_sums[-1], minibatch_size
+            ), "Bad shape: {}".format(tuple(self.state_particles.shape))
         # State particles for the neurons in each individual layer,
         # implemented as views of the memory in state_particles
         self.layer_state_particles = [
             self.state_particles[b:e] for (b, e) in
                 zip(self.partial_sums[:-1], self.partial_sums[1:])
         ]
-
 
     def __init__(self,
         input_size : int, layer_sizes : List[int], output_size : int,
@@ -95,13 +108,24 @@ class EquilibriumNet:
         self.partial_sums.extend(
             itertools.accumulate(self.shape[1:], operator.add))
 
-        self.set_batch_size(minibatch_size)
+        self.set_batch_size(minibatch_size,
+            initial_state = kwargs.get("initial_state"))
 
         # Initialize the weights
-        self.weights = [
-            torch.randn(D_in, D_out, device=self.device) for (D_in, D_out) in
-                zip(self.shape[:-1], self.shape[1:])
-        ]
+        self.weights = kwargs.get("weights")
+        if self.weights is None:
+            self.weights = [
+                torch.randn(D_in, D_out, device=self.device) for (D_in, D_out) in
+                    zip(self.shape[:-1], self.shape[1:])
+            ]
+        else:
+            assert len(self.weights) == len(self.shape) - 1
+            for weights, D_in, D_out in\
+                zip(self.weights, self.shape[:-1], self.shape[1:]):
+                assert weights.shape == (D_in, D_out),\
+                    "Got weight shape {}, expected {}".format(
+                        weights.shape, (D_in, D_out))
+
         # Get a vector of input neurons weights for each state neuron
         self.input_weights = list(
             itertools.chain.from_iterable(
@@ -110,7 +134,12 @@ class EquilibriumNet:
         )
 
         # Initialize the bias
-        self.biases = torch.randn(self.partial_sums[-1])
+        self.biases = kwargs.get("biases")
+        if self.biases is None:
+            self.biases = torch.randn(self.partial_sums[-1])
+        else:
+            assert len(self.biases) == self.partial_sums[-1]
+
         # Bias for the neurons in each individual layer, implemented as views of
         # the memory in biases
         self.layer_biases = [
@@ -129,7 +158,7 @@ class EquilibriumNet:
 
         # Squared norm of the state
         # LaTeX: \frac{1}{2}\sum_{i \in \mathcal{S}}s_i^2
-        squared_norm = torch.sum(self.state_particles ** 2) / 2
+        squared_norm = torch.sum(self.state_particles ** 2, dim=0) / 2
 
 
         # Product of bias and state activation
@@ -156,7 +185,7 @@ class EquilibriumNet:
         # Dot product of said matrix products and the activations of the vectors
         # connected to j, summed over all layers
         tensor_product = sum(
-            [torch.matmul(torch.t(pr), rho(s_in)) for pr, s_in in
+            [torch.matmul(torch.t(pr), rho(s_in)).diag() for pr, s_in in
                 zip(next_weights, self.layer_state_particles[:-1])]
         )
 
@@ -168,10 +197,10 @@ class EquilibriumNet:
         # consider these
         input_sums = -torch.mm(
             x, torch.mm(torch.t(self.weights[0]), self.layer_state_particles[0])
-        )
+        ).diag()
 
         # Now, we compute the energy for each element of x
-        return input_sums.add(squared_norm - bias_sum - tensor_product)
+        return input_sums + squared_norm - bias_sum - tensor_product
 
 
 if __name__ == "__main__":

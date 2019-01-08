@@ -23,7 +23,7 @@ def rhoprime(v):
     >>> rhoprime(torch.tensor([0.9, 2, -1, -2, 0.5, -0.5]))
     tensor([1., 0., 0., 0., 1., 0.])
     """
-    return (torch.gt(v, 0) & torch.lt(v, 1)).type(torch.Tensor)
+    return ((1 - torch.lt(v, 0)) & (1 - torch.gt(v, 1))).type(torch.Tensor)
 
 class EquilibriumNet:
     """
@@ -210,24 +210,29 @@ class EquilibriumNet:
         assert x.shape == (self.minibatch_size, self.shape[0])
 
         # Get the derivative of the activation for the state for each batch
-        dact = rhoprime(self.state_particles)
+        act_prime_states = rhoprime(self.state_particles)
 
+        # print("weight: {}".format([w.shape for w in self.weights]))
+        # print("layer: {}".format([l.shape for l in self.layer_state_particles]))
+        #
+        weight_product = [
+            torch.matmul(self.weights[0], torch.t(x))
+        ]
+        weight_product += [torch.matmul(weights, layer) for weights, layer in
+               zip(self.weights[1:], self.layer_state_particles[:-1])]
+        #
+        # print("weight_product: {}".format([r.shape for r in weight_product]))
+        #
+        # weight_product = torch.cat(weight_product)
+        # input_product = torch.nn.functional.pad(
+        #         torch.matmul(self.weights[0], torch.t(x)),
+        #         (0, self.partial_sums[-1] - self.shape[0])
+        #     )
 
-        print("weight: {}".format([w.shape for w in self.weights]))
-        print("layer: {}".format([l.shape for l in self.layer_state_particles]))
+        # print("weight_product: {}, input: {}".format(weight_product.shape, input_product.shape))
 
-        res = [torch.matmul(weights, layer) for weights, layer in
-            zip(self.weights[1:], self.layer_state_particles[:-1])]
-
-        print("res: {}".format([r.shape for r in res]))
-
-        res = torch.cat(res)
-        input_product = torch.nn.functional.pad(
-                torch.matmul(self.weights[0], torch.t(x)),
-                (0, self.partial_sums[-1] - self.shape[0])
-            )
-
-        print("res: {}, input: {}".format(res.shape, input_product.shape))
+        biases = torch.clone(self.biases)  # TODO: note sure if unsqueeze, repeat in-place?
+        return (self.state_particles - act_prime_states * (biases.unsqueeze(dim=1).repeat(1, self.minibatch_size) + torch.cat(weight_product))) / 2
 
     def energy_grad_weight(self, state, x):
         """
@@ -265,7 +270,7 @@ class EquilibriumNet:
             # update the state
             # TODO: shape of the grad? is it negative or positive grad?
             self.state_particles -= epsilon * grad
-        return self.state_particles 
+        return self.state_particles
 
     def positive_phase(self, x, y, t_plus: int, epsilon: float, beta: float):
         """
@@ -276,7 +281,7 @@ class EquilibriumNet:
             grad = self.clamped_energy_grad(x, y, beta)
             # update the state
             # TODO: shape of the grad? is it negative or positive grad?
-            self.state_particles -= epsilon * grad 
+            self.state_particles -= epsilon * grad
         return self.state_particles
 
     def clamped_energy_grad(self, x, y, beta: float):
@@ -287,9 +292,9 @@ class EquilibriumNet:
         grad = self.energy_grad_stat(x)
         # state particles for each layer
         clamp = beta * (self.layer_state_particles[-1] - y) # TODO: is it 2?
-        # want to get the last part 
+        # want to get the last part
         clamped_grad = grad + torch.cat(torch.zeros(self.partial_sums[-2], self.minibatch_size), clamp)
-        
+
         return clamped_grad
 
     def update_weights(self, beta, etas, s_pos, s_neg, x):
@@ -297,8 +302,8 @@ class EquilibriumNet:
         Updates weights based on weights gradient
         """
         # get weight gradient, separate learning rates for each layer
-        weight_grad_pos, bias_grad_pos = self.energy_grad_weight(s_pos, x) 
-        weight_grad_neg, bias_grad_neg = self.energy_grad_weight(s_neg, x) 
+        weight_grad_pos, bias_grad_pos = self.energy_grad_weight(s_pos, x)
+        weight_grad_neg, bias_grad_neg = self.energy_grad_weight(s_neg, x)
         # update the weights
         for i in range(len(self.shape) - 1):
             self.weights[i] -= (etas[i]/beta) * (weight_grad_pos[i] - weight_grad_neg[i])
@@ -306,10 +311,10 @@ class EquilibriumNet:
         # multiply different sections of vector by different learning rates eta
         bias_update = torch.zeros(self.partial_sums[-1])
         for (b, e) in zip(self.partial_sums[:-1], self.partial_sums[1:]):
-            bias_update += torch.cat([torch.zeros(b), 
+            bias_update += torch.cat([torch.zeros(b),
                                     (etas[i]/beta) * (bias_grad_pos[b:e] - bias_grad_neg[b:e]),
                                     torch.zeros(self.partial_sums[-1] - e)])
-        self.biases -= bias_update 
+        self.biases -= bias_update
         # TODO: assert update is correct
 
 if __name__ == "__main__":

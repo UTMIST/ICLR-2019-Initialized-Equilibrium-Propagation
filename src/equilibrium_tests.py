@@ -17,8 +17,8 @@ def test_energy():
     l3 = torch.tensor([5., 3.])
     l4 = torch.tensor([4., 5.])
 
-    squared_norm = (torch.sum(l2) ** 2 +
-                    torch.sum(l3) ** 2 + torch.sum(l4) ** 2) / 2
+    squared_norm = (torch.sum(l2**2) +
+                    torch.sum(l3**2) + torch.sum(l4**2)) / 2
 
     first = torch.cat((l2, l3), 0)
     second = torch.cat((first, l4), 0)

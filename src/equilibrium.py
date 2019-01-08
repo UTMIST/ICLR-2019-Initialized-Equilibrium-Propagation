@@ -69,6 +69,7 @@ class EquilibriumNet:
             assert tuple(self.state_particles.shape) == (
                 self.partial_sums[-1], minibatch_size
             ), "Bad shape: {}".format(tuple(self.state_particles.shape))
+
         # State particles for the neurons in each individual layer,
         # implemented as views of the memory in state_particles
         self.layer_state_particles = [
@@ -200,6 +201,33 @@ class EquilibriumNet:
 
         # Now, we compute the energy for each element of x
         return input_sums + squared_norm - bias_sum - tensor_product
+
+    def energy_grad_state(self, x):
+        """
+        Gradient of energy with respect to each component of the current state
+        for each component of the minibatch x
+        """
+        assert x.shape == (self.minibatch_size, self.shape[0])
+
+        # Get the derivative of the activation for the state for each batch
+        dact = rhoprime(self.state_particles)
+
+
+        print("weight: {}".format([w.shape for w in self.weights]))
+        print("layer: {}".format([l.shape for l in self.layer_state_particles]))
+
+        res = [torch.matmul(weights, layer) for weights, layer in
+            zip(self.weights[1:], self.layer_state_particles[:-1])]
+
+        print("res: {}".format([r.shape for r in res]))
+
+        res = torch.cat(res)
+        input_product = torch.nn.functional.pad(
+                torch.matmul(self.weights[0], torch.t(x)),
+                (0, self.partial_sums[-1] - self.shape[0])
+            )
+
+        print("res: {}, input: {}".format(res.shape, input_product.shape))
 
     def energy_grad_weight(self, state, x):
         """

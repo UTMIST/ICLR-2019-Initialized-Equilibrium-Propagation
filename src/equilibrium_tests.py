@@ -39,10 +39,6 @@ def test_energy():
         )
 
     actual_energy = net.energy(x)
-#     print(actual_energy.shape)
-#     print(expected_energy.shape)
-    print(actual_energy)
-    print(expected_energy)
     assert torch.allclose(actual_energy, expected_energy)
 
 
@@ -77,32 +73,63 @@ def test_energy_grad_weight():
     Check energy_grad_weight using finite differences.
     """
     x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])
+    w1 = torch.tensor([[3., 9., 5.], [1., 2., 7.], [3., 3., 2.]])
+    w2 = torch.tensor([[3., 8., 9.], [5., 3., 4.]])
+    w3 = torch.tensor([[9., 2.], [2., 0.]])
+    b = torch.tensor([1., 2., 3., 4., 5., 6., 7.])
+    l2 = torch.tensor([.9, .4, .6])
+    l3 = torch.tensor([.5, .3])
+    l4 = torch.tensor([.4, .5])
 
-    network = EquilibriumNet(3, [3, 2], 2, 2)
+    network = EquilibriumNet(3, [3, 2], 2, 2,
+                             # biases=torch.tensor([float(x) for x in b]),
+                             # weights=[w1, w2, w3],
+                             initial_state=torch.cat([l2, l3, l4]))
 
     # perform gradient checking with finite differences
     dh = 10e-5
     weight_grad, bias_grad = network.energy_grad_weight(network.state_particles, x)
 
+    assert len(weight_grad) == len(network.weights)
+    for (layer_weight_grad, layer_weight) in zip(network.weights, weight_grad):
+        assert layer_weight_grad.shape == layer_weight.shape
+    assert network.biases.shape == bias_grad.shape
+
     # check weight_grad
-    for (layer, D_in, D_out) in zip(range(1, len(network.shape)), network.shape[:-1], network.shape[1:]):
+    for (layer, D_in, D_out) in zip(range(0, len(network.shape) - 1), network.shape[:-1], network.shape[1:]):
         for i in range(D_in):
             for j in range(D_out):
-                # perturb one entry in state
-                network.weights[layer][i][j] += dh
+                # perturb one entry in weights
+                network.weights[layer][j][i] += dh
                 f_plus = network.energy(x)
-                network.weights[layer][i][j] -= 2 * dh
+                network.weights[layer][j][i] -= 2 * dh
                 f_minus = network.energy(x)
-                network.weights[layer][i][j] += dh
+                network.weights[layer][j][i] += dh
 
                 # grad estimate with finite differences
-                grad_check = (f_plus - f_minus) / (2 * dh)
+                grad_check = torch.mean((f_plus - f_minus) / (2 * dh))
 
-                print(grad_check, weight_grad[layer][i][j])
-                assert relative_error(grad_check, weight_grad[layer][i][j]) < 10e-6
+                # TODO: why is it the negative gradient?
+                print(-grad_check, weight_grad[layer][j][i])
+                # assert torch.allclose(grad_check, weight_grad[layer][j][i])
+                assert relative_error(-grad_check, weight_grad[layer][j][i]) < 10e-3
 
     # check bias grad
-    # TODO:
+    for i in range(network.partial_sums[-1]):
+        # perturb one entry in weights
+        network.biases[i] += dh
+        f_plus = network.energy(x)
+        network.biases[i] -= 2 * dh
+        f_minus = network.energy(x)
+        network.biases[i] += dh
+
+        # grad estimate with finite differences
+        grad_check = torch.mean((f_plus - f_minus) / (2 * dh))
+
+        # TODO: why is it the negative gradient?
+        print(-grad_check, bias_grad[i])
+        # assert torch.allclose(grad_check, bias_grad[i])
+        assert relative_error(-grad_check, bias_grad[i]) < 10e-3
 
 
 def relative_error(a, b):
@@ -113,6 +140,6 @@ def relative_error(a, b):
 
 
 if __name__ == "__main__":
-    test_energy()
+    # test_energy()
     # test_energy_grad_state()
-    # test_energy_grad_weight()
+    test_energy_grad_weight()

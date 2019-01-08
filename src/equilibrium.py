@@ -289,11 +289,11 @@ class EquilibriumNet:
         Returns the gradient of the clamped energy function evaluated at the current state and input
         """
         # get weight of gradient
-        grad = self.energy_grad_stat(x)
+        grad = self.energy_grad_state(x)
         # state particles for each layer
         clamp = beta * (self.layer_state_particles[-1] - y) # TODO: is it 2?
         # want to get the last part
-        clamped_grad = grad + torch.cat(torch.zeros(self.partial_sums[-2], self.minibatch_size), clamp)
+        clamped_grad = grad + torch.cat([torch.zeros(self.partial_sums[-2], self.minibatch_size), clamp])
 
         return clamped_grad
 

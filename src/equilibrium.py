@@ -43,7 +43,7 @@ class EquilibriumNet:
         """
         Get the default device for the equilibrium network's components
         """
-        return None
+        return "cpu"
 
     def set_batch_size(self, minibatch_size : int, **kwargs):
         """
@@ -239,8 +239,6 @@ class EquilibriumNet:
 
         bias_grad = torch.mean(activated_state, dim=1)
 
-        assert self.biases.shape == bias_grad.shape
-
         # TODO: this code is copied from constructor
 
         layer_states = [torch.t(x)]
@@ -250,14 +248,10 @@ class EquilibriumNet:
         ]
 
         weight_grad = [
-            torch.mm(prev_activated_state, torch.t(next_activated_state)) / self.minibatch_size
+            torch.mm(next_activated_state, torch.t(prev_activated_state)) / self.minibatch_size
             for (prev_activated_state, next_activated_state) in
             zip(layer_states[:-1], layer_states[1:])
         ]
-        assert len(weight_grad) == len(self.weights)
-        for (layer_weight_grad, layer_weight) in zip(self.weights, weight_grad):
-            print(layer_weight_grad.shape, layer_weight.shape)
-            assert layer_weight_grad.shape == layer_weight.shape
 
         return weight_grad, bias_grad
 

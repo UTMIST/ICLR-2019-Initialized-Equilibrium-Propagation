@@ -173,6 +173,37 @@ class EquilibriumNet:
         # Now, we compute the energy for each element of x
         return input_sums.add(squared_norm - bias_sum - tensor_product)
 
+    def energy_grad_weight(self, state, x):
+        """
+        Gradient of energy with respect to the weights
+        """
+        assert state.shape == self.state_particles.shape
+
+        activated_state = rho(state)
+
+        bias_grad = torch.mean(activated_state, dim=1)
+
+        assert self.biases.shape == bias_grad.shape
+
+        # TODO: this code is copied from constructor
+
+        layer_states = [torch.t(x)]
+        layer_states += [
+            activated_state[b:e] for (b, e) in
+            zip(self.partial_sums[:-1], self.partial_sums[1:])
+        ]
+
+        weight_grad = [
+            torch.mm(prev_activated_state, torch.t(next_activated_state)) / self.minibatch_size
+            for (prev_activated_state, next_activated_state) in
+            zip(layer_states[:-1], layer_states[1:])
+        ]
+        assert len(weight_grad) == len(self.weights)
+        for (layer_weight_grad, layer_weight) in zip(self.weights, weight_grad):
+            assert layer_weight_grad.shape == layer_weight.shape
+
+        return weight_grad, bias_grad
+
 
 if __name__ == "__main__":
     import doctest

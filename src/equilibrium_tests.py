@@ -83,6 +83,8 @@ def test_energy_grad_weight():
 
     # perform gradient checking with finite differences
     dh = 10e-5
+    weight_grad, bias_grad = network.energy_grad_weight(network.state_particles, x)  # TODO: implement
+
     for (layer, D_in, D_out) in zip(range(1, len(network.shape)), network.shape[:-1], network.shape[1:]):
         for i in range(D_in):
             for j in range(D_out):
@@ -96,9 +98,8 @@ def test_energy_grad_weight():
                 # grad estimate with finite differences
                 grad_check = (f_plus - f_minus) / (2 * dh)
 
-                true_grad = network.energy_grad_weight(x)  # TODO: implement
-
-                assert relative_error(grad_check, true_grad) < 10e-6
+                print(grad_check, weight_grad[layer][i][j])
+                assert relative_error(grad_check, weight_grad[layer][i][j]) < 10e-6
 
 
 def relative_error(a, b):
@@ -109,6 +110,6 @@ def relative_error(a, b):
 
 
 if __name__ == "__main__":
-    test_energy()
-    test_energy_grad_state()
+    # test_energy()
+    # test_energy_grad_state()
     test_energy_grad_weight()

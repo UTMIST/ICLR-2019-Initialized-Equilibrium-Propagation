@@ -5,7 +5,7 @@ For training the model
 import numpy as np
 
 from data import load_data
-from equilibrium import Equilibrium
+from equilibrium import EquilibriumNet
 from evaluate import accuracy
 
 SEED = 0

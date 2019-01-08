@@ -43,7 +43,7 @@ class EquilibriumNet:
         """
         Get the default device for the equilibrium network's components
         """
-        return None
+        return "cpu"
 
     def set_batch_size(self, minibatch_size : int, **kwargs):
         """

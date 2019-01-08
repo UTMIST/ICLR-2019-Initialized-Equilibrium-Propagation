@@ -115,16 +115,16 @@ class EquilibriumNet:
         self.weights = kwargs.get("weights")
         if self.weights is None:
             self.weights = [
-                torch.randn(D_in, D_out, device=self.device) for (D_in, D_out) in
+                torch.randn(D_out, D_in, device=self.device) for (D_in, D_out) in
                     zip(self.shape[:-1], self.shape[1:])
             ]
         else:
             assert len(self.weights) == len(self.shape) - 1
             for weights, D_in, D_out in\
                 zip(self.weights, self.shape[:-1], self.shape[1:]):
-                assert weights.shape == (D_in, D_out),\
+                assert weights.shape == (D_out, D_in),\
                     "Got weight shape {}, expected {}".format(
-                        weights.shape, (D_in, D_out))
+                        weights.shape, (D_out, D_in))
 
         # Get a vector of input neurons weights for each state neuron
         self.input_weights = list(
@@ -178,7 +178,7 @@ class EquilibriumNet:
         # Matrix product of the weight matrix for a layer and the activation of
         # neurons in that layer.
         next_weights = [
-            torch.mm(W, rho(s_out)) for W, s_out in
+            torch.mm(torch.t(W), rho(s_out)) for W, s_out in
                 zip(self.weights[1:], self.layer_state_particles[1:])
         ]
 

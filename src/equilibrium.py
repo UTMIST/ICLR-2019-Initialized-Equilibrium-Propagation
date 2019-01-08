@@ -163,8 +163,7 @@ class EquilibriumNet:
 
         # Product of bias and state activation
         # LaTeX: \sum_{i \in \mathcal{S}}b_i\rho(s_i)
-        bias_sum = torch.sum(
-            torch.matmul(self.biases, rho(self.state_particles)))
+        bias_sum = torch.matmul(self.biases, rho(self.state_particles))
 
         # Tensor product of weight matrix, activation of non-state neurons j and
         # activation of non-state neurons i connected to j
@@ -196,7 +195,7 @@ class EquilibriumNet:
         # the first are connected to the input neurons, and hence we need only
         # consider these
         input_sums = -torch.mm(
-            x, torch.mm(torch.t(self.weights[0]), self.layer_state_particles[0])
+            x, torch.mm(torch.t(self.weights[0]), rho(self.layer_state_particles[0]))
         ).diag()
 
         # Now, we compute the energy for each element of x
@@ -229,6 +228,7 @@ class EquilibriumNet:
         ]
         assert len(weight_grad) == len(self.weights)
         for (layer_weight_grad, layer_weight) in zip(self.weights, weight_grad):
+            print(layer_weight_grad.shape, layer_weight.shape)
             assert layer_weight_grad.shape == layer_weight.shape
 
         return weight_grad, bias_grad

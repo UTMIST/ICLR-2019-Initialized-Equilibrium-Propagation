@@ -17,8 +17,7 @@ def test_energy():
     l3 = torch.tensor([5., 3.])
     l4 = torch.tensor([4., 5.])
 
-    squared_norm = (torch.sum(l2**2) +
-                    torch.sum(l3**2) + torch.sum(l4**2)) / 2
+    squared_norm = (torch.sum(l2**2) + torch.sum(l3**2) + torch.sum(l4**2)) / 2
 
     first = torch.cat((l2, l3), 0)
     second = torch.cat((first, l4), 0)
@@ -28,7 +27,7 @@ def test_energy():
     prod2 = torch.dot(torch.mv(torch.t(w3), rho(l4)), rho(l3))
     tensor_product = prod1 + prod2
 
-    input_sums = -torch.mv(x, torch.mv(w1, rho(l2)))
+    input_sums = -torch.mv(x, torch.mv(torch.t(w1), rho(l2)))
 
     expected_energy = input_sums.add(squared_norm - bias_sum - tensor_product)
 
@@ -83,8 +82,9 @@ def test_energy_grad_weight():
 
     # perform gradient checking with finite differences
     dh = 10e-5
-    weight_grad, bias_grad = network.energy_grad_weight(network.state_particles, x)  # TODO: implement
+    weight_grad, bias_grad = network.energy_grad_weight(network.state_particles, x)
 
+    # check weight_grad
     for (layer, D_in, D_out) in zip(range(1, len(network.shape)), network.shape[:-1], network.shape[1:]):
         for i in range(D_in):
             for j in range(D_out):
@@ -101,6 +101,9 @@ def test_energy_grad_weight():
                 print(grad_check, weight_grad[layer][i][j])
                 assert relative_error(grad_check, weight_grad[layer][i][j]) < 10e-6
 
+    # check bias grad
+    # TODO:
+
 
 def relative_error(a, b):
     """
@@ -110,6 +113,6 @@ def relative_error(a, b):
 
 
 if __name__ == "__main__":
-    # test_energy()
+    test_energy()
     # test_energy_grad_state()
-    test_energy_grad_weight()
+    # test_energy_grad_weight()

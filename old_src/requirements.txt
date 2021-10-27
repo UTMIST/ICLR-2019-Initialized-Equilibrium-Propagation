@@ -1,7 +1,7 @@
 certifi==2018.10.15
 cloudpickle==0.6.1
 cycler==0.10.0
-dask==0.20.0
+dask==2021.10.0
 decorator==4.3.0
 imageio==2.4.1
 kiwisolver==1.0.1

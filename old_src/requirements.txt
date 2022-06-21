@@ -10,7 +10,7 @@ mkl-fft==1.0.6
 mkl-random==1.0.1
 mnist==0.2.2
 networkx==2.2
-numpy==1.15.3
+numpy==1.22.0
 olefile==0.46
 Pillow==5.3.0
 pyparsing==2.2.2
